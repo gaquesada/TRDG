@@ -1,0 +1,48 @@
+ Subrutina algoritmo mariposa
+
+algoritmomariposa:
+;Se copian los datos en la SRAM.
+;Los datos de prueba se almacenan en formato de 16 bits signados (-16384 ...+16384). 
+;FFT tambien da datos en 16 bits
+
+ldi r31,high(2*datosprueba128);*en la parte superior del registro Z - 16 bits - ZH (=r31)
+ldi r30, low(2*datosprueba128);*en la parte inferior del registro Z - 16 bits - ZL (=r30)
+clr i
+
+Captura:  ;Se agregan los datos
+  
+LPM dato1,Z+    ;Load Program Memory.Se cargan los valores de la tabla de origen
+LPM dato2,Z+    ;Z+ significa que el registro Z, o sea donde se están guardando
+				;los datos es incrementado en 1.
+push ZH			;Los datos se almacenan en pila
+push ZL
+ldi ZH,high(2*datosprueba128)       ;*se corre el dato una unidad, para nn2, usar 128
+ldi ZL,low(2*datosprueba128)       ;*se corre el dato una unidad,tabla apropiada
+add ZL,i
+adc ZH,base ;*Add with Carry
+lpm puntero,Z ;Para salvar la info se obtiene la posicion 
+pop ZL
+pop ZH
+ldi XH,0
+ldi XL,sramstart ;$0080
+add XL,puntero
+adc XH,base
+add XL,puntero
+adc XH,base
+st X+,dato1     ;Se guarda X+ en la dirección de dato1
+st X,dato2      ;Se guarda X+ en la dirección de dato2 
+                ;Guardar de forma ordenada los datos en SRAM
+inc i
+cpi i,nn2 ;* nos permite saber si ya se llegó al tope de elementos
+brne captura ;*se vuelve a saltar a captura de datos si aún no se llega al dato final
+
+;Ahora los datos para la fft se llaman y almacenan en la SRAM
+;Direccion(sramstart+2)=$0082. Para aplicaciones propias los datos deben 
+;organizarse desde el principio después de la tabla de 
+;clasificación "memory_locations_XX_values". 
+
+;Los datos se almacenan en la SRAM como un entero con signo
+;Lo aanterior se hace en un formato de 16 bits
+;dw = LOW:HIGH 
+
+ret
