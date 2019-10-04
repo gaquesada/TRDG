@@ -7,5 +7,9 @@ Una vez realiza el paso anterior, se puede volver a aplicar la separación, de f
 
 Para ejecutar el algoritmo se siguen dos pasos; primeramente se realiza un acomodo de bit-reversed. Como segundo conjunto de pasos, se realiza un loop que calcula trannsformadas de orden 2 , 4, 8 hasta N. 
 
+Como ejemplo, el valor de una transformada Fkippiipiipi.iip va a ser igual a un fn. Para calcular el valor de n, se puede realizar el siguiente procedimiento:
+Al inicio se tienen los puntos o muestras, que pueden ser complejas. El conjunto de muestras al inicio tiene un tamaño “n” (que puede ser una potencia de 2), sin embargo, dentro del algoritmo se trataría un arreglo real de tamaño 2n, en el que cada dato complejo usa dos espacios consecutivos, uno para la parte real y otro para la parte compleja.
+
+
 Referencias:
 https://www.cec.uchile.cl/cinetica/pcordero/MC_libros/NumericalRecipesinC.pdf
