@@ -1,1 +1,11 @@
+Pasos para algoritmo de FFT
+	El algoritmo para ejecutar una FFT se puede realizar de forma recursiva. Para implementarlo, se utiliza que la transformada rápida de Fourier de un conjunto de puntos como una transformada rápida de sus N/2 puntos pares más la transformada de Fourier de sus N/2  puntos impares, como se muestra a continuación:
 
+Con W como una constante compleja.
+
+Una vez realiza el paso anterior, se puede volver a aplicar la separación, de forma recursiva, de modo que la transformada Fke se puede obtener con la transformada de Fourier de sus N/4 puntos pares más sus puntos N/4 impares.
+
+Para ejecutar el algoritmo se siguen dos pasos; primeramente se realiza un acomodo de bit-reversed. Como segundo conjunto de pasos, se realiza un loop que calcula trannsformadas de orden 2 , 4, 8 hasta N. 
+
+Referencias:
+https://www.cec.uchile.cl/cinetica/pcordero/MC_libros/NumericalRecipesinC.pdf
