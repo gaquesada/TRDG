@@ -1,0 +1,75 @@
+;Fórmula para la aplicación del algoritmo de decimtaion in time
+
+;Se inicia un ciclo for, con otro ciclo for adentro, de modo que se recorran los datos de las transformadas anteriores.
+
+;En código escrito:
+
+;mmax=2;
+;while(n>mmax){
+;istep=mmax<<1;  Corrimiento de mmax a la izquierda una posición
+;angulo=isign*(6.2831/mmax)
+;wtemp=sin(0.5*angulo)
+;wpr=-2.0*wtemp*wtemp
+;wpi=sin(angulo)
+;wr=1.0
+;wi=0.0
+;
+;Ciclo for 1{
+;	ciclo for 2{
+;		}
+;
+;mmax=istep
+;
+;	}
+;
+
+
+
+;Código:
+
+ldi mmax,2  		; Se carga a mmax el valor de 2
+
+while_cicloInicial:
+
+;se verifican las condiciones para ver si se continua con el desarrollo o se salta al procedimiento final:
+
+cpi mmax,nn2 		;Compara mmax con nn2.
+
+brlo while_desarrollo	;si nn2 es mayor que mmax, salta al procedimiento de desarrollo
+
+rjmp while_final	;Salta para realizar el procedimiento final
+
+
+
+while_desarrollo:	;Etiqueta para el procedimiento de desarrollo.
+
+;Se almacena en istep el corrimiento de mmax una posición a la izquierda.
+mov istep, mmax
+lsl istep
+
+;
+
+
+ldi ,6.2831
+mov dd8u,temp
+mov dv8u,istep
+rcall div8u
+
+;For (m=1, m<mmax, m=m+2){
+;
+;
+;	j=i+mmax;
+;	tempr=wr }
+;
+;
+;Para la obtención de un valor evaludo en la función cosenoidal:
+;
+;
+;
+;Para la obtención de un valor evaludo en la función senoidal:
+;
+;
+;En desarrollo
+;
+;__________________________
+;
