@@ -41,13 +41,40 @@ rjmp while_final	;Salta para realizar el procedimiento final
 
 
 
+
 while_desarrollo:	;Etiqueta para el procedimiento de desarrollo.
 
 ;Se almacena en istep el corrimiento de mmax una posición a la izquierda.
-mov istep, mmax
+
+mov istep, mmax  ;Istep
+
 lsl istep
 
+cvtsi2sd R8, mmax   ;conversión de double word integer,   R8: Float mmax
+
+mov R9, __float64__(6.28318530717959)
+
+divsd R9, R8 ;
+
+mov R10, __float64__(0.5)
+
+mulsd R10, R9		; multiplicación 0.5
+
+;evaluar la función senoidal en R10 y guardar en R11
+
+ldi R8, -2
+
+mul R8, R10
+
+mul R8,R10
+
+
+resultado=
 ;
+
+
+
+;________
 
 
 ldi ,6.2831
