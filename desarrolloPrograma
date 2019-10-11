@@ -1,13 +1,14 @@
-;Fórmula para la aplicación del algoritmo de decimtaion in time
+;Fórmula para la aplicación del algoritmo de decimation in time
 
 ;Se inicia un ciclo for, con otro ciclo for adentro, de modo que se recorran los datos de las transformadas anteriores.
 
-;En código escrito:
+;En código:
+
 
 ;mmax=2;
 ;while(n>mmax){
 ;istep=mmax<<1;  Corrimiento de mmax a la izquierda una posición
-;angulo=isign*(6.2831/mmax)
+;angulo=isign*(6.2831/mmax)   si ising es 1, calcula la FFT, si es -1 calcula la trnasformada inversa FFT
 ;wtemp=sin(0.5*angulo)
 ;wpr=-2.0*wtemp*wtemp
 ;wpi=sin(angulo)
@@ -16,51 +17,53 @@
 ;
 ;Ciclo for 1{
 ;	ciclo for 2{
+;
+;       Formula para cálculo
+;
 ;		}
 ;
 ;mmax=istep
 ;
 ;	}
 ;
+;
+;Código de la parte superior en Ensamblador:
 
 
 
-;Código:
+ldi r1, 2      ;ldi mmax,2  	Se carga a mmax el valor de 2
 
-ldi mmax,2  		; Se carga a mmax el valor de 2
 
 while_cicloInicial:
 
 ;se verifican las condiciones para ver si se continua con el desarrollo o se salta al procedimiento final:
 
-cpi mmax,nn2 		;Compara mmax con nn2.
+cpi mmax,n 		;Compara mmax (r1) con n (r3).
 
-brlo while_desarrollo	;si nn2 es mayor que mmax, salta al procedimiento de desarrollo
+brlo while_desarrollo	;si n es mayor que mmax, salta al procedimiento de desarrollo
 
 rjmp while_final	;Salta para realizar el procedimiento final
-
-
 
 
 while_desarrollo:	;Etiqueta para el procedimiento de desarrollo.
 
 ;Se almacena en istep el corrimiento de mmax una posición a la izquierda.
 
-mov istep, mmax  ;Istep
+mov istep, mmax   ;Istep=mmax   istep (r2)   mmax(r1)
 
-lsl istep
+lsl istep         ;istep<<1
 
-cvtsi2sd R8, mmax   ;conversión de double word integer,   R8: Float mmax
+cvtsi2sd R8, mmax   ;conversión de double word integer
 
-mov R9, __float64__(6.28318530717959)
+mov R9, __float32__(6.28318530717959) ; asignación de constante
 
-divsd R9, R8 ;
+divsd R9, R8		   ; R8: Float mmax
 
-mov R10, __float64__(0.5)
+mov R10, __float32__(0.5)  
 
-mulsd R10, R9		; multiplicación 0.5
+mulsd R10, R9		   ; 0.5*Angulo
 
-;evaluar la función senoidal en R10 y guardar en R11
+;evaluar la función senoidal en R10 y guardar en R11   wtemp=sin(0.5*angulo)
 
 ldi R8, -2
 
@@ -68,19 +71,123 @@ mul R8, R10
 
 mul R8,R10
 
+;wpi=sin(angulo)   Se evalúa la función senoidal en el valor de R8, para almacenar en R8.
+
+ldi R11, 1
+
+ldi R12, 0
+
+
+;ciclo for interno 1
+;m aumenta de dos en dos.
+
+
+for_interno1:
+
+ldi r7, 1 		;inicialmente carga a m (r7) un 1
+
+for_ejecucion1:
+
+cpi r1, r7		;Compara mmax(r1) con m (r7)
+
+brlo for_salida1 	;Si n es mayor que mmax, salta a for_salida1
+
+
+for_interno2:
+
+mov r8, r7 		;incialmente carga a i (r8) el valor de m (r7)
+
+for_ejecucion2:
+
+cpi r3, r8		;Compara n(r3) con i(r8)
+
+brlo for_salida2 	;Si i(r8) es mayor que n (r3), salta a for_salida2
+
+
+;Implementación fórmula
+
+
+add r8, istep
+
+jp for_ejecucion2
+
+
+for_salida2:
+
+;wr=(wtemp=wr)*wpr-wi*wpi+wr;
+;wi=wi*wpr+wtemp*wpi+wi;
+
+
+inc r7  		;incremento de m
+
+inc r7   		;incremento de m
+
+jp for_ejecucion1   	;regresa a etiqueta for_ejecucion1
+
+
+for_salida1:
+
+;mmax=istep
+
+jp while_cicloInicial
+
+
+while_final:  ;etiqueta donde se seguiría después del ciclo inicial
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+____
+
+mov R10, m   ; R10=m    
+
+mul R9, R1   ;  R1=istep    R9=
+
+
+
+;mov i,m
+;mul jj,istep    ;r0 := jj*istep
+;mov i,r0            
+;add i,m         ;i:=m+jj*istep
+;mov temp,i
+;add temp,mmax
+;mov j,temp      ;j:=i+mmax
+
+
+	;ciclo for interno 2
+	;m aumenta de dos en dos.
+	;
+
+
+
+
 
 resultado=
 ;
 
 
 
+
 ;________
 
-
-ldi ,6.2831
-mov dd8u,temp
-mov dv8u,istep
-rcall div8u
+;ldi ,6.2831
+;mov dd8u,temp
+;mov dv8u,istep
+;rcall div8u
 
 ;For (m=1, m<mmax, m=m+2){
 ;
@@ -89,14 +196,26 @@ rcall div8u
 ;	tempr=wr }
 ;
 ;
-;Para la obtención de un valor evaludo en la función cosenoidal:
+;Para la obtención de un valor evaluado en la función cosenoidal:
 ;
 ;
 ;
-;Para la obtención de un valor evaludo en la función senoidal:
+;Para la obtención de un valor evaluado en la función senoidal:
 ;
 ;
-;En desarrollo
+;
 ;
 ;__________________________
 ;
+;
+;https://gist.github.com/nikAizuddin/0e307cac142792dcdeba
+;
+;
+:
+;Mem
+;http://www.atc.uniovi.es/telematica/2ac/Practicas/Practicas-Ensamblador-IA-32.pdf
+;
+;
+;
+;
+;  
