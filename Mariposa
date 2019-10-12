@@ -25,7 +25,7 @@ _cicloinicio:            ;Etiqueta para el ciclo de inicio.
 		jl _cuerpodeciclo ;mientras nn2>r19 hacer while_schleife_body / BRLO: Branch condicional, en el que salta si mmax<nn2.
 
 
-		rjmp while_schleife_ende        ;llega al final del ciclo
+		jmp while_schleife_ende        ;llega al final del ciclo
 
 
 
@@ -50,7 +50,7 @@ _Inicio_bucle_ii:    ;for ii=1 to (mmax div 2)
     
     mov r24,r16         ;
     mov r25,r21
-    rcall div8u           ;Divisions routine
+    call div8u           ;Divisions routine
     
 ;.def   drem8u  =r15        ;remainder
 ;.def   dres8u  =r24        ;result
@@ -58,47 +58,47 @@ _Inicio_bucle_ii:    ;for ii=1 to (mmax div 2)
 ;.def   dv8u    =r25        ;divisor
 
 
-    mov jjende,r24       ;jjende:=nn2-m div istep
+    mov r7,r24       ;jjende:=nn2-m div istep
     
-    clr jj                  ;jj:=0  Inicialización para el loop   
+    xor r18, r18                  ;jj:=0  Inicialización para el loop   
 ;Ahora se obtienen los valores de coseno
 
-    ldi ZH,high(2*cosinetab)
-    ldi ZL, low(2*cosinetab)
-    ldi zaehler,nn2
-    mov temp,mmax
-    lsr temp
-pp: lsr zaehler
-    lsr temp
+    mov ZH,high(2*cosinetab)
+    mov ZL, low(2*cosinetab)
+    mov r24,nn2
+    mov r16,r19
+    shr r16 ----------
+pp: lsr r24
+    lsr r16
     brne pp
-    mov temp,ii
-    dec temp
-    mul temp,zaehler
+    mov r16,r17
+    dec r16
+    mul r16,r24
     add ZL,r0
     adc ZH,r1
     add ZL,r0   ;adicion doble de los punteros 
     adc ZH,r1   ;2 byte por cada entrada a la tabla "table entry" 
-    lpm wrL,Z+  ;Ahora tenemos wrL(ow)
-    lpm wrH,Z   ;ahora tenemos(igh)
+    mov wrL,[Z+]  ;Ahora tenemos wrL(ow)
+    mov wrH,[Z]   ;ahora tenemos(igh)
 ;Ahora se obtienen los valores de seno
 
     ldi ZH,high(2*sinetab)
     ldi ZL, low(2*sinetab)
-    ldi zaehler,nn2
-    mov temp,mmax
-    lsr temp
-pq: lsr zaehler
-    lsr temp
+    ldi r24,nn2
+    mov r16,r19
+    lsr r16
+pq: lsr r24
+    lsr r16
     brne pq
-    mov temp,ii
-    dec temp
-    mul temp,zaehler
+    mov r16,r17
+    dec r16
+    mul r16,r24
     add ZL,r0
     adc ZH,r1
     add ZL,r0   ;adicion doble de los punteros   
     adc ZH,r1   ;2 byte por cada entrada a la tabla "table entry"
-    lpm wiL,Z+  ;Ahora tenemos wrL(ow)
-    lpm wiH,Z   ;ahora tenemos(igh)
+    mov wiL,[Z+]  ;Ahora tenemos wrL(ow)
+    mov wiH,[Z]   ;ahora tenemos(igh)
     
     
 for_schleife_jj_start:    ;Etiqueta del ciclo para volver al inicio.
@@ -113,13 +113,13 @@ for_schleife_jj_start:    ;Etiqueta del ciclo para volver al inicio.
         cp jjende,jj
         brsh for_schleife_jj_start  
 ;Se termina el loop jj
-    mov temp,mmax
-    lsr temp        ;iiende:=mmax div 2
-    cp ii,temp              
+    mov r16,r19
+    lsr r16        ;iiende:=mmax div 2
+    cp r17,r16              
     brlo for_schleife_ii_start
 ;final de for_schleife_ii
-mov mmax,istep
-rjmp while_schleife_start
+mov r19,istep
+jmp while_schleife_start
 
 
 
@@ -144,7 +144,7 @@ _ordenamientomariposa:
 		mov ZL, low(2*posicionvalores128)       ;tabla apropiada
 		add ZL,r22
 		adc ZH,r6
-		lpm r0,Z ;Para salvar la info se obtiene la posicion 
+		mov r0,[Z] ;Para salvar la info se obtiene la posicion 
 		pop ZL
 		pop ZH
 		mov XH,0
@@ -175,8 +175,6 @@ ret
 ;---------------------------------------- FUNCIONES MATEMATICAS -----------------------------------------------------------------------------------------------------
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-
-
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ;*
 ;* FUNCTION
@@ -196,17 +194,19 @@ ret
 
 muls16x16_32:
 ;	clr	r6
-	muls	r23, r21		; (signed)ah * (signed)bh
-	movw	r19:r18, r1:r0
+	imul	r23, r21		; (signed)ah * (signed)bh
+	mov	r19, r0
+	mov r18, r0
 	mul	r22, r20		; al * bl
-	movw	r17:r16, r1:r0
+	mov	r17, r0
+	mov r16, r0
 	mulsu	r23, r20		; (signed)ah * bl
-	sbc	r19, r6
+	sbb	r19, r6
 	add	r17, r0
 	adc	r18, r1
 	adc	r19, r6
 	mulsu	r21, r22		; (signed)bh * al
-	sbc	r19, r6
+	sbb	r19, r6
 	add	r17, r0
 	adc	r18, r1
 	adc	r19, r6
@@ -235,73 +235,73 @@ div8u:	sub	r15,r15	;clear remainder and carry
 	rol	r24		;shift left dividend
 	rol	r15		;shift dividend into remainder
 	sub	r15,r25	;remainder = remainder - divisor
-	brcc	d8u_1		;if result negative
+	jnc	d8u_1		;if result negative
 	add	r15,r25	;    restore remainder
 	clc			;    clear carry to be shifted into result
-	rjmp	d8u_2		;else
+	jmp	d8u_2		;else
 d8u_1:	sec			;    set carry to be shifted into result
 
 d8u_2:	rol	r24		;shift left dividend
 	rol	r15		;shift dividend into remainder
 	sub	r15,r25	;remainder = remainder - divisor
-	brcc	d8u_3		;if result negative
+	jnc	d8u_3		;if result negative
 	add	r15,r25	;    restore remainder
 	clc			;    clear carry to be shifted into result
-	rjmp	d8u_4		;else
+	jmp	d8u_4		;else
 d8u_3:	sec			;    set carry to be shifted into result
 
 d8u_4:	rol	r24		;shift left dividend
 	rol	r15		;shift dividend into remainder
 	sub	r15,r25	;remainder = remainder - divisor
-	brcc	d8u_5		;if result negative
+	jnc	d8u_5		;if result negative
 	add	r15,r25	;    restore remainder
 	clc			;    clear carry to be shifted into result
-	rjmp	d8u_6		;else
+	jmp	d8u_6		;else
 d8u_5:	sec			;    set carry to be shifted into result
 
 d8u_6:	rol	r24		;shift left dividend
 	rol	r15		;shift dividend into remainder
 	sub	r15,r25	;remainder = remainder - divisor
-	brcc	d8u_7		;if result negative
+	jnc	d8u_7		;if result negative
 	add	r15,r25	;    restore remainder
 	clc			;    clear carry to be shifted into result
-	rjmp	d8u_8		;else
+	jmp	d8u_8		;else
 d8u_7:	sec			;    set carry to be shifted into result
 
 d8u_8:	rol	r24		;shift left dividend
 	rol	r15		;shift dividend into remainder
 	sub	r15,r25	;remainder = remainder - divisor
-	brcc	d8u_9		;if result negative
+	jnc	d8u_9		;if result negative
 	add	r15,r25	;    restore remainder
 	clc			;    clear carry to be shifted into result
-	rjmp	d8u_10		;else
+	jmp	d8u_10		;else
 d8u_9:	sec			;    set carry to be shifted into result
 
 d8u_10:	rol	r24		;shift left dividend
 	rol	r15		;shift dividend into remainder
 	sub	r15,r25	;remainder = remainder - divisor
-	brcc	d8u_11		;if result negative
+	jnc	d8u_11		;if result negative
 	add	r15,r25	;    restore remainder
 	clc			;    clear carry to be shifted into result
-	rjmp	d8u_12		;else
+	jmp	d8u_12		;else
 d8u_11:	sec			;    set carry to be shifted into result
 
 d8u_12:	rol	r24		;shift left dividend
 	rol	r15		;shift dividend into remainder
 	sub	r15 r25	;remainder = remainder - divisor
-	brcc	d8u_13		;if result negative
+	jnc	d8u_13		;if result negative
 	add	r15,	;    restore remainder
 	clc			;    clear carry to be shifted into result
-	rjmp	d8u_14		;else
+	jmp	d8u_14		;else
 d8u_13:	sec			;    set carry to be shifted into result
 
 d8u_14:	rol	dr24		;shift left dividend
 	rol	r15		;shift dividend into remainder
 	sub	r15,r25	;remainder = remainder - divisor
-	brcc	d8u_15		;if result negative
+	jnc	d8u_15		;if result negative
 	add	r15,r25	;    restore remainder
 	clc			;    clear carry to be shifted into result
-	rjmp	d8u_16		;else
+	jmp	d8u_16		;else
 d8u_15:	sec			;    set carry to be shifted into result
 
 d8u_16:	rol	r24		;shift left dividend
@@ -324,17 +324,18 @@ d8u_16:	rol	r24		;shift left dividend
 ;*    cannot remember where it was. Full credits to the author!
 ;******************************************************************************
 sqrt:
-	clr	r16
-	ldi	r18,1		; initialize the seed to be subtracted
-	clr	r19		; for each iteration
+	xor	r16, r16
+	mov	r18,$1		; initialize the seed to be subtracted
+	xor	r19, r19	; for each iteration
+
 sqrt_loop:
 	sub	r8,r18
-	sbc	r9,r19
+	sbb	r9,r19
 	brlo	sqrt_exit
 	inc	r16
-	subi	r18, low(-2)	; keep the number to subtract ODD
+	sub	r18, low(-2)	; keep the number to subtract ODD
 	sbci	r19, high(-2)	; strange add via subtracting a neg number
-	rjmp	sqrt_loop
+	jmp	sqrt_loop
 sqrt_exit:
 	ret		
 
