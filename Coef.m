@@ -1,3 +1,6 @@
+
+%El presente codigo permite calcular las frecuencias necesarias para N muestras
+
 function [Creal,Cimg] = Coef(N) %N es el numero de puntos
 Creal=[];
 Cimg=[];
