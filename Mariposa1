@@ -1,48 +1,174 @@
- Subrutina algoritmo mariposa
+section .data
+	nn2 db 128
 
-algoritmomariposa:
-;Se copian los datos en la SRAM.
-;Los datos de prueba se almacenan en formato de 16 bits signados (-16384 ...+16384). 
-;FFT tambien da datos en 16 bits
+section .text
+	global _start
 
-ldi r31,high(2*datosprueba128);*en la parte superior del registro Z - 16 bits - ZH (=r31)
-ldi r30, low(2*datosprueba128);*en la parte inferior del registro Z - 16 bits - ZL (=r30)
-clr i
+_start:
 
-Captura:  ;Se agregan los datos
-  
-LPM dato1,Z+    ;Load Program Memory.Se cargan los valores de la tabla de origen
-LPM dato2,Z+    ;Z+ significa que el registro Z, o sea donde se están guardando
+	call _ordenamiento_mariposa
+
+	mov rax,60
+	mov rdi, 0
+	syscall
+
+_ordenamientomariposa:
+	;Se copian los datos en la SRAM.
+	;Los datos de prueba se almacenan en formato de 16 bits signados (-16384 ...+16384). 
+	;FFT tambien da datos en 16 bits
+	li ZH, high(2*testdata)  ;ldi = li
+	li ZL, low(2*testdata)
+	clr r22
+
+	captarbloque: ;Al copiar los valores se salva uno
+		LPM R8 ,Z+      ;Se cargan los valores de la tabla de origen
+		LPM R9,Z+       ;significa que el registro Z, o sea donde se están guardando
 				;los datos es incrementado en 1.
-push ZH			;Los datos se almacenan en pila
-push ZL
-ldi ZH,high(2*datosprueba128)       ;*se corre el dato una unidad, para nn2, usar 128
-ldi ZL,low(2*datosprueba128)       ;*se corre el dato una unidad,tabla apropiada
-add ZL,i
-adc ZH,base ;*Add with Carry
-lpm puntero,Z ;Para salvar la info se obtiene la posicion 
-pop ZL
-pop ZH
-ldi XH,0
-ldi XL,sramstart ;$0080
-add XL,puntero
-adc XH,base
-add XL,puntero
-adc XH,base
-st X+,dato1     ;Se guarda X+ en la dirección de dato1
-st X,dato2      ;Se guarda X+ en la dirección de dato2 
-                ;Guardar de forma ordenada los datos en SRAM
-inc i
-cpi i,nn2 ;* nos permite saber si ya se llegó al tope de elementos
-brne captura ;*se vuelve a saltar a captura de datos si aún no se llega al dato final
+		push ZH         ;Los datos se almacenan en pila
+		push ZL
+		lii ZH,high(2*posicionvalores128)       ;para nn2 <> usar 128 / se corre el dato una unidad, para nn2, usar 128
+		lii ZL, low(2*posicionvalores128)       ;tabla apropiada / se corre el dato una unidad,tabla apropiada
+		add ZL,r22
+		adc ZH,r6      ;Add with Carry
+		lpm r0,Z ;Para salvar la info se obtiene la posicion 
+		pop ZL
+		pop ZH
+		mov XH,0
+		mov XL,$0080
+		add XL,r0
+		adc XH,r6
+		add XL,r0
+		adc XH,r6
+		st X+,R8    ;Se guarda primero el byte inferior
+		st X,R9      ;Se guarda el byte superior 
+	                ;Guardar de forma ordenada los datos en SRAM
+		inc r22
+		cpi r22,nn2  
+		brne captarbloque
 
-;Ahora los datos para la fft se llaman y almacenan en la SRAM
-;Direccion(sramstart+2)=$0082. Para aplicaciones propias los datos deben 
-;organizarse desde el principio después de la tabla de 
-;clasificación "memory_locations_XX_values". 
+		;Ahora los datos para la fft se llaman y almacenan en la SRAM
+		;Direccion(sramstart+2)=$0082. Para aplicaciones propias los datos deben 
+		;organizarse desde el principio después de la tabla de 
+		;clasificación "memory_locations_XX_values". 
 
-;Los datos se almacenan en la SRAM como un entero con signo
-;Lo aanterior se hace en un formato de 16 bits
-;dw = LOW:HIGH 
+		;Los datos se almacenan en la SRAM como un enteero con signo
+		;Lo aanterior se hace en un formato de 16 bits
+		;dw = LOW:HIGH 
 
 ret
+
+
+
+testdata:       ;128 el valor de los datos puede tomar valores entre -16384 y +16384
+                ;todos los valores se tratan como enteros con signo
+                ;Mantener todos los datos entre estos valores evita desbordamien.dw     -16000,-14000,-12000,-10000, -8000, -6000, -4000, -2000
+	dw          0,  2000,  4000,  6000,  8000, 10000, 12000, 14000
+	dw     -16000,-14000,-12000,-10000, -8000, -6000, -4000, -2000
+	dw          0,  2000,  4000,  6000,  8000, 10000, 12000, 14000
+	dw     -16000,-14000,-12000,-10000, -8000, -6000, -4000, -2000
+	dw          0,  2000,  4000,  6000,  8000, 10000, 12000, 14000
+	dw     -16000,-14000,-12000,-10000, -8000, -6000, -4000, -2000
+	dw          0,  2000,  4000,  6000,  8000, 10000, 12000, 14000
+	dw     -16000,-14000,-12000,-10000, -8000, -6000, -4000, -2000
+	dw          0,  2000,  4000,  6000,  8000, 10000, 12000, 14000
+	dw     -16000,-14000,-12000,-10000, -8000, -6000, -4000, -2000
+	dw          0,  2000,  4000,  6000,  8000, 10000, 12000, 14000
+	dw     -16000,-14000,-12000,-10000, -8000, -6000, -4000, -2000
+	dw          0,  2000,  4000,  6000,  8000, 10000, 12000, 14000
+	dw     -16000,-14000,-12000,-10000, -8000, -6000, -4000, -2000
+	dw          0,  2000,  4000,  6000,  8000, 10000, 12000, 14000
+
+
+posicionvalores128:
+	db 1,2
+	db 65,66
+	db 33,34
+	db 97,98
+	db 17,18
+	db 81,82
+	db 49,50
+	db 113,114
+	db 9,10
+	db 73,74
+	db 41,42
+	db 105,106
+	db 25,26
+	db 89,90
+	db 57,58
+	db 121,122
+	db 5,6
+	db 69,70
+	db 37,38
+	db 101,102
+	db 21,22
+	db 85,86
+	db 53,54
+	db 117,118
+	db 13,14
+	db 77,78
+	db 45,46
+	db 109,110
+	db 29,30
+	db 93,94
+	db 61,62
+	db 125,126
+	db 3,4
+	db 67,68
+	db 35,36
+	db 99,100
+	db 19,20
+	db 83,84
+	db 51,52
+	db 115,116
+	db 11,12
+	db 75,76
+	db 43,44
+	db 107,108
+	db 27,28
+	db 91,92
+	db 59,60
+	db 123,124
+	db 7,8
+	db 71,72
+	db 39,40
+	db 103,104
+	db 23,24
+	db 87,88
+	db 55,56
+	db 119,120
+	db 15,16
+	db 79,80
+	db 47,48
+	db 111,112
+	db 31,32
+	db 95,96
+	db 63,64
+	db 127,128
+
+posicionvalores64:
+	db       1,      2,     33,     34
+	db      17,     18,     49,     50
+	db       9,     10,     41,     42
+	db      25,     26,     57,     58
+	db       5,      6,     37,     38
+	db      21,     22,     53,     54
+	db      13,     14,     45,     46
+	db      29,     30,     61,     62
+	db       3,      4,     35,     36
+	db      19,     20,     51,     52
+	db      11,     12,     43,     44
+	db      27,     28,     59,     60
+	db       7,      8,     39,     40
+	db      23,     24,     55,     56
+	db      15,     16,     47,     48
+	db      31,     32,     63,     64
+
+posicionvalores32:
+	db       1,      2,     17,     18
+	db       9,     10,     25,     26
+	db       5,      6,     21,     22
+	db      13,     14,     29,     30
+	db       3,      4,     19,     20
+	db      11,     12,     27,     28
+	db       7,      8,     23,     24
+	db      15,     16,     31,     32
