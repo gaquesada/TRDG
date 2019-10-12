@@ -1,6 +1,6 @@
 section .data
 	nn2 db 128
-
+	
 section .text
 	global _start
 
@@ -8,28 +8,63 @@ _start:
 
 	call _ordenamiento_mariposa
 
+
+	mov r19,2   
+ 
+	call _cicloinicio
+
+
+
+
 	mov rax,60
 	mov rdi, 0
 	syscall
+
+
+_cicloinicio:            ;Etiqueta para el ciclo de inicio.
+
+		cmp r19,nn2                     ;nn2=32,64 or 128 CPI: Compara mmax con nn2.
+
+
+		jl _cuerpodeciclo ;mientras nn2>r19 hacer while_schleife_body / BRLO: Branch condicional, en el que salta si mmax<nn2.
+
+
+		rjmp while_schleife_ende        ;llega al final del ciclo
+
+
+_cuerpodeciclo:            ;Etiqueta para el ciclo de Body.
+
+		mov r21,r19                  ;Movimiento de datos, se mueve mmax.
+
+		lsl r21           ;r21:=2*mmax / r21:=2*mmax     LSL es un shift lógico de una posición a la izquierda
+
+		xor r17, r17             ;Se coloca ii en cero. ii:=0
+ret
+
+
+
+
+
+
+
 
 _ordenamientomariposa:
 	;Se copian los datos en la SRAM.
 	;Los datos de prueba se almacenan en formato de 16 bits signados (-16384 ...+16384). 
 	;FFT tambien da datos en 16 bits
-	li ZH, high(2*testdata)  ;ldi = li
-	li ZL, low(2*testdata)
-	clr r22
+	mov ZH, high*(2*testdata)
+	mov ZL, low*(2*testdata)
+	xor r22, r22
 
 	captarbloque: ;Al copiar los valores se salva uno
-		LPM R8 ,Z+      ;Se cargan los valores de la tabla de origen
-		LPM R9,Z+       ;significa que el registro Z, o sea donde se están guardando
-				;los datos es incrementado en 1.
-		push ZH         ;Los datos se almacenan en pila
+		mov R8 ,[Z+]    ;Se cargan los valores de la tabla de origen
+		mov R9,[Z+]
+		push ZH
 		push ZL
-		lii ZH,high(2*posicionvalores128)       ;para nn2 <> usar 128 / se corre el dato una unidad, para nn2, usar 128
-		lii ZL, low(2*posicionvalores128)       ;tabla apropiada / se corre el dato una unidad,tabla apropiada
+		mov ZH, high(2*posicionvalores128)       ;para nn2 <> usar 128
+		mov ZL, low(2*posicionvalores128)       ;tabla apropiada
 		add ZL,r22
-		adc ZH,r6      ;Add with Carry
+		adc ZH,r6
 		lpm r0,Z ;Para salvar la info se obtiene la posicion 
 		pop ZL
 		pop ZH
@@ -56,6 +91,11 @@ _ordenamientomariposa:
 		;dw = LOW:HIGH 
 
 ret
+
+
+
+
+
 
 
 
@@ -168,6 +208,10 @@ posicionvalores32:
 	db       9,     10,     25,     26
 	db       5,      6,     21,     22
 	db      13,     14,     29,     30
+	db       3,      4,     19,     20
+	db      11,     12,     27,     28
+	db       7,      8,     23,     24
+	db      15,     16,     31,     32
 	db       3,      4,     19,     20
 	db      11,     12,     27,     28
 	db       7,      8,     23,     24
