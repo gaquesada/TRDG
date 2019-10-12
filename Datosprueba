@@ -3,10 +3,12 @@
 ;----------------------------------------------------------------------------------------------------------------------------
 
 ;* .dw Genera constantes de tipo word de 16 bits, incluidas las cadenas
-;* Por el momento se desconoce los datos con lo que se va a probar la FFT pero la posibilidad 
-;* de que tenga valores negativos es alta
-;* por ende se usará un formato de 16 bits signados
-;* (-16384 ...+16384) Topes
+
+;* Por la naturaleza de generar una imagen en YOCTO, los datos a utilizar se cargaran directamente en el codigo 
+;* y no desde un archivo de texto
+
+;* EStos se muestran acontinuacion (-16384 ...+16384) Topes
+
 
 
 datosprueba128: 
@@ -30,7 +32,34 @@ dw          0,  1000,  3000,  5000,  7000, 9000, 13000, 14000
 
 
 
+datosprueba64:
+db       1,      2,     33,     34
+db      17,     18,     49,     50
+db       9,     10,     41,     42
+db      25,     26,     57,     58
+db       5,      6,     37,     38
+db      21,     22,     53,     54
+db      13,     14,     45,     46
+db      29,     30,     61,     62
+db       3,      4,     35,     36
+db      19,     20,     51,     52
+db      11,     12,     43,     44
+db      27,     28,     59,     60
+db       7,      8,     39,     40
+db      23,     24,     55,     56
+db      15,     16,     47,     48
+db      31,     32,     63,     64
 
+
+datosprueba32:
+db       1,      2,     17,     18
+db       9,     10,     25,     26
+db       5,      6,     21,     22
+db      13,     14,     29,     30
+db       3,      4,     19,     20
+db      11,     12,     27,     28
+db       7,      8,     23,     24
+db      15,     16,     31,     32
 
 
 
