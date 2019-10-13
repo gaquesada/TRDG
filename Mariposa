@@ -1,8 +1,12 @@
 section .data
 	nn2 db 128
-	
+    sramstart db $0080
 section .text
 	global _start
+
+;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+;-------------------------------------------------------------------START--------------------------------------------------------------------------------------------
+;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 _start:
 
@@ -17,6 +21,12 @@ _start:
 	syscall
 
 
+
+;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+;--------------------------------------------------------------INICIO DE CICLO---------------------------------------------------------------------------------------
+;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
 _cicloinicio:            ;Etiqueta para el ciclo de inicio.
 
 		cmp r19,nn2                     ;nn2=32,64 or 128 CPI: Compara mmax con nn2.
@@ -28,8 +38,10 @@ _cicloinicio:            ;Etiqueta para el ciclo de inicio.
 		jmp while_schleife_ende        ;llega al final del ciclo
 
 
+;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+;-----------------------------------------------------------------CUERPO DE CICLO------------------------------------------------------------------------------------
+;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-;-------------------------------------------------------------------------------------------------------------
 _cuerpodeciclo:            ;Etiqueta para el ciclo de Body.
 
 		mov r21,r19                  ;Movimiento de datos, se mueve mmax.
@@ -38,6 +50,7 @@ _cuerpodeciclo:            ;Etiqueta para el ciclo de Body.
 
 		xor r17, r17             ;Se coloca ii en cero. ii:=0
 
+;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 _Inicio_bucle_ii:    ;for ii=1 to (mmax div 2)  
     inc r17               ; se incrementa en uno la variable ii          
@@ -67,10 +80,10 @@ _Inicio_bucle_ii:    ;for ii=1 to (mmax div 2)
     mov ZL, low(2*cosinetab)
     mov r24,nn2
     mov r16,r19
-    shr r16 ----------
-pp: lsr r24
-    lsr r16
-    brne pp
+    SHR r16 
+pp: SHR r24
+    SHR r16
+    jne pp
     mov r16,r17
     dec r16
     mul r16,r24
@@ -78,18 +91,18 @@ pp: lsr r24
     adc ZH,r1
     add ZL,r0   ;adicion doble de los punteros 
     adc ZH,r1   ;2 byte por cada entrada a la tabla "table entry" 
-    mov wrL,[Z+]  ;Ahora tenemos wrL(ow)
-    mov wrH,[Z]   ;ahora tenemos(igh)
+    mov r12,[Z+]  ;Ahora tenemos wrL(ow)
+    mov r13,[Z]   ;ahora tenemos(igh)
 ;Ahora se obtienen los valores de seno
 
-    ldi ZH,high(2*sinetab)
-    ldi ZL, low(2*sinetab)
-    ldi r24,nn2
+    mov ZH,high(2*sinetab)
+    mov ZL, low(2*sinetab)
+    mov r24,nn2
     mov r16,r19
-    lsr r16
-pq: lsr r24
-    lsr r16
-    brne pq
+    SHR r16
+pq: SHR r24
+    SHR r16
+    jne pq
     mov r16,r17
     dec r16
     mul r16,r24
@@ -97,36 +110,209 @@ pq: lsr r24
     adc ZH,r1
     add ZL,r0   ;adicion doble de los punteros   
     adc ZH,r1   ;2 byte por cada entrada a la tabla "table entry"
-    mov wiL,[Z+]  ;Ahora tenemos wrL(ow)
-    mov wiH,[Z]   ;ahora tenemos(igh)
+    mov r14,[Z+]  ;Ahora tenemos wrL(ow)
+    mov r15,[Z]   ;ahora tenemos(igh)
     
-    
-for_schleife_jj_start:    ;Etiqueta del ciclo para volver al inicio.
+;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-        rcall Schleife_jj_body  ;Acomoda el loop con un branch instruction
+_Inicio_bucle_jj:    ;Etiqueta del ciclo para volver al inicio.
+
+        call _cuerpo_jj  ;Acomoda el loop con un branch instruction
                                 ;donde la rutina de procesamiento se llama rcall 
                                 
                                 ;Abarbeitungsroutine mit rcall aufgerufen. 
                                 ;(Problema es del rango de salto brsh)
                                 
-        inc jj                  ; Se incrementa jj en 1.
-        cp jjende,jj
+        inc r18                  ; Se incrementa jj en 1.
+        cp jjende,r18
         brsh for_schleife_jj_start  
 ;Se termina el loop jj
     mov r16,r19
-    lsr r16        ;iiende:=mmax div 2
+    SHR r16        ;iiende:=mmax div 2
     cp r17,r16              
     brlo for_schleife_ii_start
 ;final de for_schleife_ii
-mov r19,istep
+mov r19,r21
 jmp while_schleife_start
 
 
+_cuerpo_jj:
+;Calculo de los indices i y j
+        mov r22,r23
+        mul r18,r21    ;r0 := jj*istep
+        mov r22,r0            
+        add r22,r23         ;i:=m+jj*istep
+        mov r16,r22
+        add r16,r19
+        mov r20, r16      ;j:=i+mmax
+		
+		
+;Obtener los datos[j] y los datos[j+1] de la SRAM 
+        mov XH,$0 ; se inicializa en 0
+        mov XL,sramstart ; se posiciona
+        add XL,r20    ; inicia el recorrido
+        adc XH,r6 ;Recordemos que los datos se guardan en 16 bits
+        add XL,r20       ;se duplica el indice
+        adc XH,r6 ;de igual modo se guarda en el formato de 16 bits
+        ld R8,X+     ;[j]low-byte hole
+        ld R9,X+     ;j]High-byte hole
+        ld R10,X+     ;[j+1]low-Byte hole
+        ld R11,X      ;[j+1]High-Byte hole
+		
+		
+;Para el calculo de tempi y tempr se requien multiples multiplicaciones y los datos de la pila
+        push r23
+        push r22
+        push r21
+        push r20
+        push r19
+        push r18
+        push r17
+        push r16
+		
+;Calculo de tempr
+        mov r21, r13 ;movw r21:r20,r13:r12
+        mov r20, r12
+        mov r23, R9
+        mov r22, R8
+        call muls16x16_32 ;tempr:=wr*data[j] (16bit signed)
+        MOV r3,r19  ;solo tomamos los high-result-bytes 
+        MOV r2,r18  
+        mov r21, r15 ;movw r21:r20,r15:r14
+        mov r20, r14
+        mov r23, R11 ;movw r23:r22,R11:R10
+        mov r22, R10
+        call muls16x16_32 ;tempi:=wi*data[j+1] (16bit signed)
+        MOV r5,r19      ;solo tomamos los HIGH-result-bytes 
+        MOV r4,r18  
+        sub r2,r4
+        sbb r3,r5       ;tempr := wr*data[j]-wi*data[j+1]   
+;Calculo de tempi
+        push r2         
+        push r3
+        mov r21, r13
+        mov r20, r12
+        mov r23, R11
+        mov r22, R10
+
+        call muls16x16_32      ;tempr:=wr*data[j+1] (16bit signed)
+        MOV r3,r19  ;solo tomamos los high-result-bytes 
+        MOV r2,r18  
+        mov r21, r15
+        mov r20, r14
+        mov r23, R9
+        Mov r22, R8
+        call muls16x16_32 ;tempi:=wi*data[j] (16bit signed)
+        MOV r5,r19  ;solo tomamos los high-result-bytes   
+        MOV r4,r18  
+        add r4,r2
+        adc r5,r3       ;tempi := wr*data[j+1]+wi*data[j]   
+        pop r3
+        pop r2
+        pop r16
+        pop r17
+        pop r18
+        pop r19
+        pop r20
+        pop r21
+        pop r22
+        pop r23
+;multiplicaciones terminadas, se apila y registra en orden
+
+;Obtenga datos [i] de la SRAM
+        mov XH,$0 ;se inicializa en 0
+        mov XL,sramstart ; se posiciona en los datos
+        add XL,r22
+        adc XH,r6
+        add XL,r22
+        adc XH,r6
+        ld R10,X+     ;[i]Low-Byte Hole
+        ld R11,X      ;[i]high-Byte hole
+;data[j]:=data[i]-tempr
+        mov R9, R11;movw R9:R8, R11:R10
+        mov R8, R10
+        asr R9
+        ror R8
+        sub R8,r2
+        sbb R9,r3
+        mov XH,0
+        mov XL,sramstart
+        add XL,j
+        adc XH,r6
+        add XL,j
+        adc XH,r6
+        st X+,R8
+        st X,R9
+;Se obtienen los datos [i+1] de la SRAM 
+        mov XH,0
+        mov XL,sramstart
+        add XL,r22
+        adc XH,r6
+        add XL,r22
+        adc XH,r6
+        adiw XH:XL,2
+        ld R10,X+     ;hole Data[i+1]low-Byte
+        ld R11,X      ;Hole Data[i+1]high-Byte
+;data[j+1]:=data[i+1]-tempi
+        mov R9, R11
+        mov R8, R10
+        asr R9
+        ror R8
+        sub R8,r4
+        sbb R9,r5
+        mov XH,0
+        mov XL,sramstart
+        add XL,j
+        adc XH,r6
+        add XL,j
+        adc XH,r6
+        adiw XH:XL,2
+        st X+,R8
+        st X,R9
+;data[i+1]:=data[i+1]+tempi
+        asr R11
+        ror R10
+        add R10,r4
+        adc R11,r5
+        mov XH,0
+        mov XL,sramstart
+        add XL,r22
+        adc XH,r6
+        add XL,r22
+        adc XH,r6
+        adiw XH:XL,2
+        st X+,R10
+        st X,R11
+;Obtenga los datos [i] de la SRAM 
+        mov XH,0
+        mov XL,sramstart
+        add XL,r22
+        adc XH,r6
+        add XL,r22
+        adc XH,r6
+        ld R10,X+     ;hole Data[i]low-Byte
+        ld R11,X      ;Hole Data[i]high-Byte
+;data[i]:=data[i]+tempr
+        asr R11
+        ror R10
+        add R10,r2
+        adc R11,r3
+        mov XH,0
+        mov XL,sramstart
+        add XL,r22
+        adc XH,r6
+        add XL,r22
+        adc XH,r6
+        st X+,R10
+        st X,R11
+        ret     ;Se retorna a Schleife_jj
 
 
 
 
-;-------------------------------------------------------------------------------------
+;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+;------------------------------------------ORDENAMIENTO MARIPOSA ----------------------------------------------------------------------------------------------------
+;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 _ordenamientomariposa:
 	;Se copian los datos en la SRAM.
 	;Los datos de prueba se almacenan en formato de 16 bits signados (-16384 ...+16384). 
@@ -157,8 +343,8 @@ _ordenamientomariposa:
 		st X,R9      ;Se guarda el byte superior 
 	                ;Guardar de forma ordenada los datos en SRAM
 		inc r22
-		cpi r22,nn2  
-		brne captarbloque
+		cmp r22,nn2  
+		jne captarbloque
 
 		;Ahora los datos para la fft se llaman y almacenan en la SRAM
 		;Direccion(sramstart+2)=$0082. Para aplicaciones propias los datos deben 
@@ -288,7 +474,7 @@ d8u_11:	sec			;    set carry to be shifted into result
 
 d8u_12:	rol	r24		;shift left dividend
 	rol	r15		;shift dividend into remainder
-	sub	r15 r25	;remainder = remainder - divisor
+	sub	r15, r25	;remainder = remainder - divisor
 	jnc	d8u_13		;if result negative
 	add	r15,	;    restore remainder
 	clc			;    clear carry to be shifted into result
