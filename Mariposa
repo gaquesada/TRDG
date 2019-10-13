@@ -1,8 +1,7 @@
 section .data
-    nn2 db 128
-    sramstart db $0080
+	nn2 db 128
 section .text
-    global _start
+	global _start
 
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ;-------------------------------------------------------------------START--------------------------------------------------------------------------------------------
@@ -10,15 +9,15 @@ section .text
 
 _start:
 
-    call _ordenamiento_mariposa
+	call _ordenamiento_mariposa
 
-    mov r19,2   
+	mov r19,2   
  
-    call _cicloinicio
+	call _cicloinicio
 
-    mov rax,60
-    mov rdi, 0
-    syscall
+	mov rax,60
+	mov rdi, 0
+	syscall
 
 
 
@@ -29,13 +28,13 @@ _start:
 
 _cicloinicio:            ;Etiqueta para el ciclo de inicio.
 
-        cmp r19,nn2                     ;nn2=32,64 or 128 CPI: Compara mmax con nn2.
+		cmp r19,nn2                     ;nn2=32,64 or 128 CPI: Compara mmax con nn2.
 
 
-        jl _cuerpodeciclo ;mientras nn2>r19 hacer while_schleife_body / BRLO: Branch condicional, en el que salta si mmax<nn2.
+		jl _cuerpodeciclo ;mientras nn2>r19 hacer while_schleife_body / BRLO: Branch condicional, en el que salta si mmax<nn2.
 
 
-        jmp _clausura        ;llega al final del ciclo
+		jmp _clausura        ;llega al final del ciclo
 
 
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -44,11 +43,11 @@ _cicloinicio:            ;Etiqueta para el ciclo de inicio.
 
 _cuerpodeciclo:            ;Etiqueta para el ciclo de Body.
 
-        mov r21,r19                  ;Movimiento de datos, se mueve mmax.
+		mov r21,r19                  ;Movimiento de datos, se mueve mmax.
 
-        lsl r21           ;r21:=2*mmax / r21:=2*mmax     LSL es un shift lógico de una posición a la izquierda
+		lsl r21           ;r21:=2*mmax / r21:=2*mmax     LSL es un shift lógico de una posición a la izquierda
 
-        xor r17, r17             ;Se coloca ii en cero. ii:=0
+		xor r17, r17             ;Se coloca ii en cero. ii:=0
 
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -164,9 +163,9 @@ _looping:
     mov r16,nn2
     sub r16,r3
     add r16,$3        
-    mov i3,r16     ; i3:=nn2-i2+3
-    mov i4,i3
-    inc i4          ; i4:=i3+1
+    mov r4,r16     ; i3:=nn2-i2+3
+    mov r5,r4
+    inc r5          ; i4:=i3+1
 ;Ahora obtenemos wr
     mov ZH, high(2*cosinetab)
     mov ZL, low(2*cosinetab)
@@ -201,7 +200,7 @@ for_final:            ;Resorting is done
 nop
 ;Vienen calculos extra para el calculo para DC-Value (f_0) y f(N/2).
 
-call DC_compensation 
+call _dccompensacion 
 
 ;****************************************************************
 ;* FFT está lista Data-array (starts at sramstart+2) 
@@ -238,11 +237,11 @@ _cuerpo_jj:
         mov r16,r22
         add r16,r19
         mov r20, r16      ;j:=i+mmax
-        
-        
+		
+		
 ;Obtener los datos[j] y los datos[j+1] de la SRAM 
-        mov XH,$0 ; se inicializa en 0
-        mov XL,sramstart ; se posiciona
+        mov XH,0 ; se inicializa en 0
+        mov XL,$0080 ; se posiciona
         add XL,r20    ; inicia el recorrido
         adc XH,r6 ;Recordemos que los datos se guardan en 16 bits
         add XL,r20       ;se duplica el indice
@@ -251,8 +250,8 @@ _cuerpo_jj:
         mov R9,X+     ;j]High-byte hole
         mov R10,X+     ;[j+1]low-Byte hole
         mov R11,X      ;[j+1]High-Byte hole
-        
-        
+		
+		
 ;Para el calculo de tempi y tempr se requien multiples multiplicaciones y los datos de la pila
         push r23
         push r22
@@ -262,7 +261,7 @@ _cuerpo_jj:
         push r18
         push r17
         push r16
-        
+		
 ;Calculo de tempr
         mov r21, r13 ;movw r21:r20,r13:r12
         mov r20, r12
@@ -313,8 +312,8 @@ _cuerpo_jj:
 ;multiplicaciones terminadas, se apila y registra en orden
 
 ;Obtenga datos [i] de la SRAM
-        mov XH,$0 ;se inicializa en 0
-        mov XL,sramstart ; se posiciona en los datos
+        mov XH,0 ;se inicializa en 0
+        mov XL,$0080 ; se posiciona en los datos
         add XL,r22
         adc XH,r6
         add XL,r22
@@ -329,7 +328,7 @@ _cuerpo_jj:
         sub R8,r2
         sbb R9,r3
         mov XH,0
-        mov XL,sramstart
+        mov XL,$0080
         add XL,j
         adc XH,r6
         add XL,j
@@ -338,7 +337,7 @@ _cuerpo_jj:
         st X,R9
 ;Se obtienen los datos [i+1] de la SRAM 
         mov XH,0
-        mov XL,sramstart
+        mov XL,$0080
         add XL,r22
         adc XH,r6
         add XL,r22
@@ -354,7 +353,7 @@ _cuerpo_jj:
         sub R8,r4
         sbb R9,r5
         mov XH,0
-        mov XL,sramstart
+        mov XL,$0080
         add XL,j
         adc XH,r6
         add XL,j
@@ -368,7 +367,7 @@ _cuerpo_jj:
         add R10,r4
         adc R11,r5
         mov XH,0
-        mov XL,sramstart
+        mov XL,$0080
         add XL,r22
         adc XH,r6
         add XL,r22
@@ -378,7 +377,7 @@ _cuerpo_jj:
         st X,R11
 ;Obtenga los datos [i] de la SRAM 
         mov XH,0
-        mov XL,sramstart
+        mov XL,$0080
         add XL,r22
         adc XH,r6
         add XL,r22
@@ -391,7 +390,7 @@ _cuerpo_jj:
         add R10,r2
         adc R11,r3
         mov XH,0
-        mov XL,sramstart
+        mov XL,$0080
         add XL,r22
         adc XH,r6
         add XL,r22
@@ -400,6 +399,259 @@ _cuerpo_jj:
         st X,R11
         ret     ;Se retorna a Schleife_jj
 
+;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+_loopcalculos: ;para el buvle de calculo
+;***** Calculo de h1r y h2i
+;Datos hole[i1] en reg. data2:data1
+    mov XH,$0
+    mov XL,$0080
+    add XL,r2
+    adc XH,r6
+    add XL,r2
+    adc XH,r6
+    mov R8,X+     ;lower-Byte primero
+    mov R9,X      ;Highbyte 
+;datos hole[i3] en par de registros data4:data3
+    mov XH,$0
+    mov XL,$0080
+    add XL,r4
+    adc XH,r6
+    add XL,r4
+    adc XH,r6
+    mov R10,X+     ;lower-Byte primero
+    mov R11,X      ;Highbyte 
+    sar R9
+    ror R8       ;data[i1]:=data[i1]/2
+    sar R11
+    ror R10       ;data[i3]:=data[i3]/2
+    
+    mov r19, R9
+    MOV r18, R8
+    add r18,R10
+    adc r19,R11        ;h1r:=data[i1]+data[i3]
+    sts $60,r18
+    sts $61,r19       ;se guarda h1r en sram-location
+    mov r19, R9
+    mov r18, R8
+    sub r18,R10
+    sbb r19,R11        ;h1r:=-1*(data[i1]-data[i3])
+    com r18
+    com r19 
+    mov r16,1
+    add r18,r16
+    adc r19,r6
+    sts $66,r18
+    sts $67,r19       ;se guarda h1r en sram-location
+    
+    
+;***** Calculo de h1i y h2r
+;hole Data[i2] en reg. R9:data1
+    mov XH,0
+    mov XL,$0080
+    add XL,r2
+    adc XH,r6
+    add XL,r2
+    adc XH,r6
+    mov R8,X+     ;lower-Byte zuerst
+    mov R9,X      ;Highbyte 
+;hole Data[r5] en register-pair R11:data3
+    mov XH,0
+    mov XL,$0080
+    add XL,r5
+    adc XH,r6
+    add XL,r5
+    adc XH,r6
+    mov R10,X+     ;lower-Byte primero
+    mov R11,X      ;Highbyte 
+    sar R9
+    ror R8       ;data[i2]:=data[i2]/2
+    sar R11
+    ror R10       ;data[i4]:=data[i4]/2
+    mov r19, R9
+    mov r18, R8
+    sub r18,R10
+    sbb r19,R11        
+    sts $62,r18
+    sts $63,r19       ;se guarda h1i en sram-location
+    add R8,R10
+    adc R9,R11     
+    sts $64,R8
+    sts $65,R9        ;se guarda h2r en sram-location
+        push r23
+        push r22
+        push r21
+        push r20
+        push r19
+        push r18
+        push r17
+        push r16
+; **** Data[i1]:=h1r+wr*h2r-wi*h2i
+        
+        mov R21, r13
+        mov R20, r12
+        lds r23,$65
+        lds r22,$64
+        call muls16x16_32
+            rol r17
+            rol r18
+            rol r19
+        mov R9,r19
+        mov R8,r18
+        mov R21, r15
+        mov R20, r14
+        lds r23,$67
+        lds r22,$66
+        call muls16x16_32
+            rol r17
+            rol r18
+            rol r19
+        sub R8,r18
+        sbb R9,r19
+        lds r18,$61
+        lds r17,$60
+        add R8,r17
+        adc R9,r18
+        mov XH,0
+        mov XL,$0080
+        add XL,r2
+        adc XH,r6
+        add XL,r2
+        adc XH,r6
+        st X+,R8
+        st X ,R9
+; **** Data[i2]:=h1i+wr*h2i+wi*h2r
+        mov R21, r13
+        mov R20, r12
+        lds r23,$67
+        lds r22,$66
+        call muls16x16_32
+            rol r17
+            rol r18
+            rol r19
+        mov R9,r19
+        mov R8,r18
+        mov R21, r15
+        mov R20, r14
+        lds r23,$65
+        lds r22,$64
+        call muls16x16_32
+            rol r17
+            rol r18
+            rol r19
+        add R8,r18
+        adc R9,r19
+        lds r18,$63
+        lds r17,$62
+        add R8,r17
+        adc R9,r18
+        mov XH,0
+        mov XL,$0080
+        add XL,r2
+        adc XH,r6
+        add XL,r2
+        adc XH,r6
+        st X+,R8
+        st X ,R9
+; **** Data[i3]:=h1r-wr*h2r+wi*h2i
+        mov R21, r15
+        mov R20, r14
+        lds r23,$67
+        lds r22,$66
+        call muls16x16_32
+            rol r17
+            rol r18
+            rol r19
+        mov R9,r19
+        mov R8,r18
+        mov R21, r13
+        mov R20, r12
+        lds r23,$65
+        lds r22,$64
+        call muls16x16_32
+            rol r17
+            rol r18
+            rol r19
+        sub R8,r18
+        sbb R9,r19
+        lds r18,$61
+        lds r17,$60
+        add R8,r17
+        adc R9,r18
+        mov XH,0
+        mov XL,$0080
+        add XL,r4
+        adc XH,r6
+        add XL,r4
+        adc XH,r6
+        st X+,R8
+        st X ,R9
+; **** Data[i4]:=-h1i+wr*h2i+wi*h2r
+        mov R21, r13
+        mov R20, r12
+        lds r23,$67
+        lds r22,$66
+        call muls16x16_32
+            rol r17
+            rol r18
+            rol r19
+        mov R9,r19
+        mov R8,r18
+        mov R21, r15
+        mov R20, r14
+        lds r23,$65
+        lds r22,$64
+        call muls16x16_32
+            rol r17
+            rol r18
+            rol r19
+        add R8,r18
+        adc R9,r19
+        lds r18,$63
+        lds r17,$62
+        sub R8,r17
+        sbb R9,r18
+        mov XH,0
+        mov XL,$0080
+        add XL,r5
+        adc XH,r6
+        add XL,r5
+        adc XH,r6
+        st X+,R8
+        st X ,R9
+        pop r16
+        pop r17
+        pop r18
+        pop r19
+        pop r20
+        pop r21
+        pop r22
+        pop r23
+    ret     ;
+
+_dccompensacion:
+        lds R8,$0080+2
+        lds R9,$0080+3
+        lds R10,$0080+4
+        lds R11,$0080+5
+        
+        mov r19, R9
+        mov r18, R8
+        add R8,R10
+        adc R9,R11
+        sub r18,R10
+        sbb r19,R11
+        sar R11
+        ror R10
+        sar r19
+        ror r18
+        sts $0080+2,R8
+        sts $0080+3,R9
+        sts $0080+4,r18
+        sts $0080+5,r19
+    ret
+;ende DC-kompensation
 
 
 
@@ -407,46 +659,46 @@ _cuerpo_jj:
 ;------------------------------------------ORDENAMIENTO MARIPOSA ----------------------------------------------------------------------------------------------------
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 _ordenamientomariposa:
-    ;Se copian los datos en la SRAM.
-    ;Los datos de prueba se almacenan en formato de 16 bits signados (-16384 ...+16384). 
-    ;FFT tambien da datos en 16 bits
-    mov ZH, high*(2*testdata)
-    mov ZL, low*(2*testdata)
-    xor r22, r22
+	;Se copian los datos en la SRAM.
+	;Los datos de prueba se almacenan en formato de 16 bits signados (-16384 ...+16384). 
+	;FFT tambien da datos en 16 bits
+	mov ZH, high*(2*testdata)
+	mov ZL, low*(2*testdata)
+	xor r22, r22
 
-    captarbloque: ;Al copiar los valores se salva uno
-        mov R8 ,[Z+]    ;Se cargan los valores de la tabla de origen
-        mov R9,[Z+]
-        push ZH
-        push ZL
-        mov ZH, high(2*posicionvalores128)       ;para nn2 <> usar 128
-        mov ZL, low(2*posicionvalores128)       ;tabla apropiada
-        add ZL,r22
-        adc ZH,r6
-        mov r0,[Z] ;Para salvar la info se obtiene la posicion 
-        pop ZL
-        pop ZH
-        mov XH,0
-        mov XL,$0080
-        add XL,r0
-        adc XH,r6
-        add XL,r0
-        adc XH,r6
-        st X+,R8    ;Se guarda primero el byte inferior
-        st X,R9      ;Se guarda el byte superior 
-                    ;Guardar de forma ordenada los datos en SRAM
-        inc r22
-        cmp r22,nn2  
-        jne captarbloque
+	captarbloque: ;Al copiar los valores se salva uno
+		mov R8 ,[Z+]    ;Se cargan los valores de la tabla de origen
+		mov R9,[Z+]
+		push ZH
+		push ZL
+		mov ZH, high(2*posicionvalores128)       ;para nn2 <> usar 128
+		mov ZL, low(2*posicionvalores128)       ;tabla apropiada
+		add ZL,r22
+		adc ZH,r6
+		mov r0,[Z] ;Para salvar la info se obtiene la posicion 
+		pop ZL
+		pop ZH
+		mov XH,0
+		mov XL,$0080
+		add XL,r0
+		adc XH,r6
+		add XL,r0
+		adc XH,r6
+		st X+,R8    ;Se guarda primero el byte inferior
+		st X,R9      ;Se guarda el byte superior 
+	                ;Guardar de forma ordenada los datos en SRAM
+		inc r22
+		cmp r22,nn2  
+		jne captarbloque
 
-        ;Ahora los datos para la fft se llaman y almacenan en la SRAM
-        ;Direccion(sramstart+2)=$0082. Para aplicaciones propias los datos deben 
-        ;organizarse desde el principio después de la tabla de 
-        ;clasificación "memory_locations_XX_values". 
+		;Ahora los datos para la fft se llaman y almacenan en la SRAM
+		;Direccion(sramstart+2)=$0082. Para aplicaciones propias los datos deben 
+		;organizarse desde el principio después de la tabla de 
+		;clasificación "memory_locations_XX_values". 
 
-        ;Los datos se almacenan en la SRAM como un enteero con signo
-        ;Lo aanterior se hace en un formato de 16 bits
-        ;dw = LOW:HIGH 
+		;Los datos se almacenan en la SRAM como un enteero con signo
+		;Lo aanterior se hace en un formato de 16 bits
+		;dw = LOW:HIGH 
 
 ret
 
@@ -457,39 +709,39 @@ ret
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ;*
 ;* FUNCTION
-;*  muls16x16_32
+;*	muls16x16_32
 ;* DECRIPTION
-;*  Signed multiply of two 16bits numbers with 32bits result.
+;*	Signed multiply of two 16bits numbers with 32bits result.
 ;* USAGE
-;*  r19:r18:r17:r16 = r23:r22 * r21:r20
+;*	r19:r18:r17:r16 = r23:r22 * r21:r20
 ;* STATISTICS
-;*  Cycles :    19 + ret
-;*  Words :     15 + ret
-;*  Register usage: r0:r1 and r6 and r16 to r23 (11 registers)
+;*	Cycles :	19 + ret
+;*	Words :		15 + ret
+;*	Register usage: r0:r1 and r6 and r16 to r23 (11 registers)
 ;* NOTE
-;*  The routine is non-destructive to the operands.
-;*  register usage differs from avr201.asm
+;*	The routine is non-destructive to the operands.
+;*	register usage differs from avr201.asm
 ;******************************************************************************
 
 muls16x16_32:
-;   clr r6
-    imul    r23, r21        ; (signed)ah * (signed)bh
-    mov r19, r0
-    mov r18, r0
-    mul r22, r20        ; al * bl
-    mov r17, r0
-    mov r16, r0
-    mulsu   r23, r20        ; (signed)ah * bl
-    sbb r19, r6
-    add r17, r0
-    adc r18, r1
-    adc r19, r6
-    mulsu   r21, r22        ; (signed)bh * al
-    sbb r19, r6
-    add r17, r0
-    adc r18, r1
-    adc r19, r6
-    ret
+;	clr	r6
+	imul	r23, r21		; (signed)ah * (signed)bh
+	mov	r19, r0
+	mov r18, r0
+	mul	r22, r20		; al * bl
+	mov	r17, r0
+	mov r16, r0
+	mulsu	r23, r20		; (signed)ah * bl
+	sbb	r19, r6
+	add	r17, r0
+	adc	r18, r1
+	adc	r19, r6
+	mulsu	r21, r22		; (signed)bh * al
+	sbb	r19, r6
+	add	r17, r0
+	adc	r18, r1
+	adc	r19, r6
+	ret
 
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ;*
@@ -499,9 +751,9 @@ muls16x16_32:
 ;* "dv8u" (divisor). The result is placed in "dres8u" and the remainder in
 ;* "drem8u".
 ;*  
-;* Number of words  :66 + return
-;* Number of cycles :50/58/66 (Min/Avg/Max) + return
-;* Low registers used   :1 (drem8u)
+;* Number of words	:66 + return
+;* Number of cycles	:50/58/66 (Min/Avg/Max) + return
+;* Low registers used	:1 (drem8u)
 ;* High registers used  :2 (dres8u/dd8u,dv8u)
 ;*
 ;***************************************************************************
@@ -509,114 +761,114 @@ muls16x16_32:
 ;***** Subroutine Register Variables
  
 
-div8u:  sub r15,r15 ;clear remainder and carry
-    
-    rol r24     ;shift left dividend
-    rol r15     ;shift dividend into remainder
-    sub r15,r25 ;remainder = remainder - divisor
-    jnc d8u_1       ;if result negative
-    add r15,r25 ;    restore remainder
-    clc         ;    clear carry to be shifted into result
-    jmp d8u_2       ;else
-d8u_1:  sec         ;    set carry to be shifted into result
+div8u:	sub	r15,r15	;clear remainder and carry
+	
+	rol	r24		;shift left dividend
+	rol	r15		;shift dividend into remainder
+	sub	r15,r25	;remainder = remainder - divisor
+	jnc	d8u_1		;if result negative
+	add	r15,r25	;    restore remainder
+	clc			;    clear carry to be shifted into result
+	jmp	d8u_2		;else
+d8u_1:	sec			;    set carry to be shifted into result
 
-d8u_2:  rol r24     ;shift left dividend
-    rol r15     ;shift dividend into remainder
-    sub r15,r25 ;remainder = remainder - divisor
-    jnc d8u_3       ;if result negative
-    add r15,r25 ;    restore remainder
-    clc         ;    clear carry to be shifted into result
-    jmp d8u_4       ;else
-d8u_3:  sec         ;    set carry to be shifted into result
+d8u_2:	rol	r24		;shift left dividend
+	rol	r15		;shift dividend into remainder
+	sub	r15,r25	;remainder = remainder - divisor
+	jnc	d8u_3		;if result negative
+	add	r15,r25	;    restore remainder
+	clc			;    clear carry to be shifted into result
+	jmp	d8u_4		;else
+d8u_3:	sec			;    set carry to be shifted into result
 
-d8u_4:  rol r24     ;shift left dividend
-    rol r15     ;shift dividend into remainder
-    sub r15,r25 ;remainder = remainder - divisor
-    jnc d8u_5       ;if result negative
-    add r15,r25 ;    restore remainder
-    clc         ;    clear carry to be shifted into result
-    jmp d8u_6       ;else
-d8u_5:  sec         ;    set carry to be shifted into result
+d8u_4:	rol	r24		;shift left dividend
+	rol	r15		;shift dividend into remainder
+	sub	r15,r25	;remainder = remainder - divisor
+	jnc	d8u_5		;if result negative
+	add	r15,r25	;    restore remainder
+	clc			;    clear carry to be shifted into result
+	jmp	d8u_6		;else
+d8u_5:	sec			;    set carry to be shifted into result
 
-d8u_6:  rol r24     ;shift left dividend
-    rol r15     ;shift dividend into remainder
-    sub r15,r25 ;remainder = remainder - divisor
-    jnc d8u_7       ;if result negative
-    add r15,r25 ;    restore remainder
-    clc         ;    clear carry to be shifted into result
-    jmp d8u_8       ;else
-d8u_7:  sec         ;    set carry to be shifted into result
+d8u_6:	rol	r24		;shift left dividend
+	rol	r15		;shift dividend into remainder
+	sub	r15,r25	;remainder = remainder - divisor
+	jnc	d8u_7		;if result negative
+	add	r15,r25	;    restore remainder
+	clc			;    clear carry to be shifted into result
+	jmp	d8u_8		;else
+d8u_7:	sec			;    set carry to be shifted into result
 
-d8u_8:  rol r24     ;shift left dividend
-    rol r15     ;shift dividend into remainder
-    sub r15,r25 ;remainder = remainder - divisor
-    jnc d8u_9       ;if result negative
-    add r15,r25 ;    restore remainder
-    clc         ;    clear carry to be shifted into result
-    jmp d8u_10      ;else
-d8u_9:  sec         ;    set carry to be shifted into result
+d8u_8:	rol	r24		;shift left dividend
+	rol	r15		;shift dividend into remainder
+	sub	r15,r25	;remainder = remainder - divisor
+	jnc	d8u_9		;if result negative
+	add	r15,r25	;    restore remainder
+	clc			;    clear carry to be shifted into result
+	jmp	d8u_10		;else
+d8u_9:	sec			;    set carry to be shifted into result
 
-d8u_10: rol r24     ;shift left dividend
-    rol r15     ;shift dividend into remainder
-    sub r15,r25 ;remainder = remainder - divisor
-    jnc d8u_11      ;if result negative
-    add r15,r25 ;    restore remainder
-    clc         ;    clear carry to be shifted into result
-    jmp d8u_12      ;else
-d8u_11: sec         ;    set carry to be shifted into result
+d8u_10:	rol	r24		;shift left dividend
+	rol	r15		;shift dividend into remainder
+	sub	r15,r25	;remainder = remainder - divisor
+	jnc	d8u_11		;if result negative
+	add	r15,r25	;    restore remainder
+	clc			;    clear carry to be shifted into result
+	jmp	d8u_12		;else
+d8u_11:	sec			;    set carry to be shifted into result
 
-d8u_12: rol r24     ;shift left dividend
-    rol r15     ;shift dividend into remainder
-    sub r15, r25    ;remainder = remainder - divisor
-    jnc d8u_13      ;if result negative
-    add r15,    ;    restore remainder
-    clc         ;    clear carry to be shifted into result
-    jmp d8u_14      ;else
-d8u_13: sec         ;    set carry to be shifted into result
+d8u_12:	rol	r24		;shift left dividend
+	rol	r15		;shift dividend into remainder
+	sub	r15, r25	;remainder = remainder - divisor
+	jnc	d8u_13		;if result negative
+	add	r15,	;    restore remainder
+	clc			;    clear carry to be shifted into result
+	jmp	d8u_14		;else
+d8u_13:	sec			;    set carry to be shifted into result
 
-d8u_14: rol dr24        ;shift left dividend
-    rol r15     ;shift dividend into remainder
-    sub r15,r25 ;remainder = remainder - divisor
-    jnc d8u_15      ;if result negative
-    add r15,r25 ;    restore remainder
-    clc         ;    clear carry to be shifted into result
-    jmp d8u_16      ;else
-d8u_15: sec         ;    set carry to be shifted into result
+d8u_14:	rol	dr24		;shift left dividend
+	rol	r15		;shift dividend into remainder
+	sub	r15,r25	;remainder = remainder - divisor
+	jnc	d8u_15		;if result negative
+	add	r15,r25	;    restore remainder
+	clc			;    clear carry to be shifted into result
+	jmp	d8u_16		;else
+d8u_15:	sec			;    set carry to be shifted into result
 
-d8u_16: rol r24     ;shift left dividend
-    ret
+d8u_16:	rol	r24		;shift left dividend
+	ret
 
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ;*
 ;* FUNCTION
-;*  sqrt 
+;*	sqrt 
 ;* DECRIPTION
-;*  B = SQRT(A)  A is 16 bit unsigned number, B = 8 bits result.
+;*	B = SQRT(A)  A is 16 bit unsigned number, B = 8 bits result.
 ;* USAGE
-;*  r16 := sqrt (r9:r8)
+;*	r16 := sqrt (r9:r8)
 ;* STATISTICS
-;*  Cycles :        variable, depends on input
-;*  Words :     10 + ret
-;*  Register usage: r16 and r9:r8 and r19:r18 (5 registers)
+;*	Cycles :		variable, depends on input
+;*	Words :		10 + ret
+;*	Register usage: r16 and r9:r8 and r19:r18 (5 registers)
 ;* NOTE
-;*  I had found the sqrt-routine somewhere on the internet, but 
+;*	I had found the sqrt-routine somewhere on the internet, but 
 ;*    cannot remember where it was. Full credits to the author!
 ;******************************************************************************
 sqrt:
-    xor r16, r16
-    mov r18,$1      ; initialize the seed to be subtracted
-    xor r19, r19    ; for each iteration
+	xor	r16, r16
+	mov	r18,$1		; initialize the seed to be subtracted
+	xor	r19, r19	; for each iteration
 
 sqrt_loop:
-    sub r8,r18
-    sbb r9,r19
-    brlo    sqrt_exit
-    inc r16
-    sub r18, low(-2)    ; keep the number to subtract ODD
-    sbci    r19, high(-2)   ; strange add via subtracting a neg number
-    jmp sqrt_loop
+	sub	r8,r18
+	sbb	r9,r19
+	jl	sqrt_exit
+	inc	r16
+	sub	r18, low(-2)	; keep the number to subtract ODD
+	sbci	r19, high(-2)	; strange add via subtracting a neg number
+	jmp	sqrt_loop
 sqrt_exit:
-    ret     
+	ret		
 
 
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -633,124 +885,145 @@ sqrt_exit:
 testdata:       ;128 el valor de los datos puede tomar valores entre -16384 y +16384
                 ;todos los valores se tratan como enteros con signo
                 ;Mantener todos los datos entre estos valores evita desbordamien.dw     -16000,-14000,-12000,-10000, -8000, -6000, -4000, -2000
-    dw          0,  2000,  4000,  6000,  8000, 10000, 12000, 14000
-    dw     -16000,-14000,-12000,-10000, -8000, -6000, -4000, -2000
-    dw          0,  2000,  4000,  6000,  8000, 10000, 12000, 14000
-    dw     -16000,-14000,-12000,-10000, -8000, -6000, -4000, -2000
-    dw          0,  2000,  4000,  6000,  8000, 10000, 12000, 14000
-    dw     -16000,-14000,-12000,-10000, -8000, -6000, -4000, -2000
-    dw          0,  2000,  4000,  6000,  8000, 10000, 12000, 14000
-    dw     -16000,-14000,-12000,-10000, -8000, -6000, -4000, -2000
-    dw          0,  2000,  4000,  6000,  8000, 10000, 12000, 14000
-    dw     -16000,-14000,-12000,-10000, -8000, -6000, -4000, -2000
-    dw          0,  2000,  4000,  6000,  8000, 10000, 12000, 14000
-    dw     -16000,-14000,-12000,-10000, -8000, -6000, -4000, -2000
-    dw          0,  2000,  4000,  6000,  8000, 10000, 12000, 14000
-    dw     -16000,-14000,-12000,-10000, -8000, -6000, -4000, -2000
-    dw          0,  2000,  4000,  6000,  8000, 10000, 12000, 14000
+	dw          0,  2000,  4000,  6000,  8000, 10000, 12000, 14000
+	dw     -16000,-14000,-12000,-10000, -8000, -6000, -4000, -2000
+	dw          0,  2000,  4000,  6000,  8000, 10000, 12000, 14000
+	dw     -16000,-14000,-12000,-10000, -8000, -6000, -4000, -2000
+	dw          0,  2000,  4000,  6000,  8000, 10000, 12000, 14000
+	dw     -16000,-14000,-12000,-10000, -8000, -6000, -4000, -2000
+	dw          0,  2000,  4000,  6000,  8000, 10000, 12000, 14000
+	dw     -16000,-14000,-12000,-10000, -8000, -6000, -4000, -2000
+	dw          0,  2000,  4000,  6000,  8000, 10000, 12000, 14000
+	dw     -16000,-14000,-12000,-10000, -8000, -6000, -4000, -2000
+	dw          0,  2000,  4000,  6000,  8000, 10000, 12000, 14000
+	dw     -16000,-14000,-12000,-10000, -8000, -6000, -4000, -2000
+	dw          0,  2000,  4000,  6000,  8000, 10000, 12000, 14000
+	dw     -16000,-14000,-12000,-10000, -8000, -6000, -4000, -2000
+	dw          0,  2000,  4000,  6000,  8000, 10000, 12000, 14000
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
-;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+;------------------------------------------------TRIGONOMETRICAS-----------------------------------------------------------------------------------------------------
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-
+sinetab:
+dw     0, 1608, 3212, 4808, 6393, 7962, 9512,11039
+dw 12539,14010,15446,16846,18204,19519,20787,22005
+dw 23170,24279,25329,26319,27245,28105,28898,29621
+dw 30273,30852,31356,31785,32137,32412,32609,32728
+cosinetab:
+dw 32767,32728,32609,32412,32137,31785,31356,30852
+dw 30273,29621,28898,28105,27245,26319,25329,24279
+dw 23170,22005,20787,19519,18204,16846,15446,14010
+dw 12539,11039, 9512, 7962, 6393, 4808, 3212, 1608
+dw     0,-1608,-3212,-4808,-6393,-7962,-9512,-11039
+dw -12539,-14010,-15446,-16846,-18204,-19519,-20787,-22005
+dw -23170,-24279,-25329,-26319,-27245,-28105,-28898,-29621
+dw -30273,-30852,-31356,-31785,-32137,-32412,-32609,-32728
+dw -32767,-32728,-32609,-32412,-32137,-31785,-31356,-30852
+dw -30273,-29621,-28898,-28105,-27245,-26319,-25329,-24279
+dw -23170,-22005,-20787,-19519,-18204,-16846,-15446,-14010
+dw -12539,-11039,-9512,-7962,-6393,-4808,-3212,-1608
+dw     0, 1608, 3212, 4808, 6393, 7962, 9512,11039
+dw 12539,14010,15446,16846,18204,19519,20787,22005
+dw 23170,24279,25329,26319,27245,28105,28898,29621
+dw 30273,30852,31356,31785,32137,32412,32609,32728
 
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ;--------------------------------------POSICIONES EN MATRICES--------------------------------------------------------------------------------------------------------
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 posicionvalores128:
-    db 1,2
-    db 65,66
-    db 33,34
-    db 97,98
-    db 17,18
-    db 81,82
-    db 49,50
-    db 113,114
-    db 9,10
-    db 73,74
-    db 41,42
-    db 105,106
-    db 25,26
-    db 89,90
-    db 57,58
-    db 121,122
-    db 5,6
-    db 69,70
-    db 37,38
-    db 101,102
-    db 21,22
-    db 85,86
-    db 53,54
-    db 117,118
-    db 13,14
-    db 77,78
-    db 45,46
-    db 109,110
-    db 29,30
-    db 93,94
-    db 61,62
-    db 125,126
-    db 3,4
-    db 67,68
-    db 35,36
-    db 99,100
-    db 19,20
-    db 83,84
-    db 51,52
-    db 115,116
-    db 11,12
-    db 75,76
-    db 43,44
-    db 107,108
-    db 27,28
-    db 91,92
-    db 59,60
-    db 123,124
-    db 7,8
-    db 71,72
-    db 39,40
-    db 103,104
-    db 23,24
-    db 87,88
-    db 55,56
-    db 119,120
-    db 15,16
-    db 79,80
-    db 47,48
-    db 111,112
-    db 31,32
-    db 95,96
-    db 63,64
-    db 127,128
+	db 1,2
+	db 65,66
+	db 33,34
+	db 97,98
+	db 17,18
+	db 81,82
+	db 49,50
+	db 113,114
+	db 9,10
+	db 73,74
+	db 41,42
+	db 105,106
+	db 25,26
+	db 89,90
+	db 57,58
+	db 121,122
+	db 5,6
+	db 69,70
+	db 37,38
+	db 101,102
+	db 21,22
+	db 85,86
+	db 53,54
+	db 117,118
+	db 13,14
+	db 77,78
+	db 45,46
+	db 109,110
+	db 29,30
+	db 93,94
+	db 61,62
+	db 125,126
+	db 3,4
+	db 67,68
+	db 35,36
+	db 99,100
+	db 19,20
+	db 83,84
+	db 51,52
+	db 115,116
+	db 11,12
+	db 75,76
+	db 43,44
+	db 107,108
+	db 27,28
+	db 91,92
+	db 59,60
+	db 123,124
+	db 7,8
+	db 71,72
+	db 39,40
+	db 103,104
+	db 23,24
+	db 87,88
+	db 55,56
+	db 119,120
+	db 15,16
+	db 79,80
+	db 47,48
+	db 111,112
+	db 31,32
+	db 95,96
+	db 63,64
+	db 127,128
 
 posicionvalores64:
-    db       1,      2,     33,     34
-    db      17,     18,     49,     50
-    db       9,     10,     41,     42
-    db      25,     26,     57,     58
-    db       5,      6,     37,     38
-    db      21,     22,     53,     54
-    db      13,     14,     45,     46
-    db      29,     30,     61,     62
-    db       3,      4,     35,     36
-    db      19,     20,     51,     52
-    db      11,     12,     43,     44
-    db      27,     28,     59,     60
-    db       7,      8,     39,     40
-    db      23,     24,     55,     56
-    db      15,     16,     47,     48
-    db      31,     32,     63,     64
+	db       1,      2,     33,     34
+	db      17,     18,     49,     50
+	db       9,     10,     41,     42
+	db      25,     26,     57,     58
+	db       5,      6,     37,     38
+	db      21,     22,     53,     54
+	db      13,     14,     45,     46
+	db      29,     30,     61,     62
+	db       3,      4,     35,     36
+	db      19,     20,     51,     52
+	db      11,     12,     43,     44
+	db      27,     28,     59,     60
+	db       7,      8,     39,     40
+	db      23,     24,     55,     56
+	db      15,     16,     47,     48
+	db      31,     32,     63,     64
 
 posicionvalores32:
-    db       1,      2,     17,     18
-    db       9,     10,     25,     26
-    db       5,      6,     21,     22
-    db      13,     14,     29,     30
-    db       3,      4,     19,     20
-    db      11,     12,     27,     28
-    db       7,      8,     23,     24
-    db      15,     16,     31,     32
+	db       1,      2,     17,     18
+	db       9,     10,     25,     26
+	db       5,      6,     21,     22
+	db      13,     14,     29,     30
+	db       3,      4,     19,     20
+	db      11,     12,     27,     28
+	db       7,      8,     23,     24
+	db      15,     16,     31,     32
 
 
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
