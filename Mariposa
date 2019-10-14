@@ -1,4 +1,4 @@
-section .data
+﻿section .data
 	nn2 db 128
 section .text
 	global _start
@@ -11,8 +11,11 @@ _start:
 
 	call _ordenamiento_mariposa
 
-	mov r19,2   
- 
+	;asignación de valor de nn2  =>   
+        ;mov bl
+
+	mov bh,2   ; MMAX=AX
+	
 	call _cicloinicio
 
 	mov rax,60
@@ -28,7 +31,7 @@ _start:
 
 _cicloinicio:            ;Etiqueta para el ciclo de inicio.
 
-		cmp r19,nn2                     ;nn2=32,64 or 128 CPI: Compara mmax con nn2.
+		cmp bh,bl                     ;nn2=32,64 or 128 CPI: Compara mmax con nn2.
 
 
 		jl _cuerpodeciclo ;mientras nn2>r19 hacer while_schleife_body / BRLO: Branch condicional, en el que salta si mmax<nn2.
@@ -43,74 +46,76 @@ _cicloinicio:            ;Etiqueta para el ciclo de inicio.
 
 _cuerpodeciclo:            ;Etiqueta para el ciclo de Body.
 
-		mov r21,r19                  ;Movimiento de datos, se mueve mmax.
+		mov ch, bl                  ;Movimiento de datos, se mueve mmax.
 
-		lsl r21           ;r21:=2*mmax / r21:=2*mmax     LSL es un shift lógico de una posición a la izquierda
+		lsl ch           ;r21:=2*mmax / r21:=2*mmax     LSL es un shift lógico de una posición a la izquierda
 
-		xor r17, r17             ;Se coloca ii en cero. ii:=0
+		xor cl, cl             ;Se coloca ii en cero. ii:=0
 
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 _Inicio_bucle_ii:    ;for ii=1 to (mmax div 2)  
-    inc r17               ; se incrementa en uno la variable ii          
-    mov r23,r17              ; Se mueve el valor de ii a "m"
-    lsl r23                 ;m:=2*ii
-    dec r23                ;m:=2*ii-1
-    mov r16,nn2          ;
+    inc cl               ; se incrementa en uno la variable ii          
+    mov dh,cl              ; Se mueve el valor de ii a "m"
+    lsl dh                 ;m:=2*ii
+    dec dh                ;m:=2*ii-1
+    mov dl,bl          ;
     
-    sub r16,r23            ;nn2-m
+    sub dl,dh            ;nn2-m
     
-    mov r24,r16         ;
-    mov r25,r21
+    mov al,dl         ;  
+    mov ah,ch
+
     call div8u           ;Divisions routine
     
 ;.def   drem8u  =r15        ;remainder
-;.def   dres8u  =r24        ;result
-;.def   dd8u    =r24        ;dividend
-;.def   dv8u    =r25        ;divisor
+;.def   dres8u  =r24        ;result   al
+;.def   dd8u    =r24        ;dividend 
+;.def   dv8u    =r25        ;divisor  ah
 
 
-    mov r7,r24       ;r7:=nn2-m div istep
+    mov si,al      ;r7:=nn2-m div istep   si
     
-    xor r18, r18                  ;jj:=0  Inicialización para el loop   
+    xor dl, dl                  ;jj:=0  Inicialización para el loop   
+
 ;Ahora se obtienen los valores de coseno
 
-    mov ZH,high(2*cosinetab)
-    mov ZL, low(2*cosinetab)
-    mov r24,nn2
-    mov r16,r19
-    SHR r16 
-pp: SHR r24
-    SHR r16
+    mov ah,high(2*cosinetab)
+    mov al, low(2*cosinetab)
+    mov bp,nn2
+    mov di,bh
+    SHR di 
+pp: SHR bp
+    SHR di
     jne pp
-    mov r16,r17
-    dec r16
-    mul r16,r24
-    add ZL,r0
-    adc ZH,r1
-    add ZL,r0   ;adicion doble de los punteros 
-    adc ZH,r1   ;2 byte por cada entrada a la tabla "table entry" 
-    mov r12,[Z+]  ;Ahora tenemos wrL(ow)
-    mov r13,[Z]   ;ahora tenemos(igh)
+    mov di,cl
+    dec di
+    mul di,bp
+    add al,r0
+    adc ah,r1
+    add al,r0   ;adicion doble de los punteros 
+    adc ah,r1   ;2 byte por cada entrada a la tabla "table entry" 
+    mov dh,[ax+]  ;Ahora tenemos wrL(ow)
+    mov r13,[ax]   ;ahora tenemos(igh)
 ;Ahora se obtienen los valores de seno
 
-    mov ZH,high(2*sinetab)
-    mov ZL, low(2*sinetab)
-    mov r24,nn2
-    mov r16,r19
-    SHR r16
-pq: SHR r24
-    SHR r16
+    mov ah,high(2*sinetab)
+    mov al, low(2*sinetab)
+    mov bp,nn2
+    mov di,bh
+    SHR di
+pq: SHR bp
+    SHR di
     jne pq
-    mov r16,r17
-    dec r16
-    mul r16,r24
-    add ZL,r0
-    adc ZH,r1
-    add ZL,r0   ;adicion doble de los punteros   
-    adc ZH,r1   ;2 byte por cada entrada a la tabla "table entry"
-    mov r14,[Z+]  ;Ahora tenemos wrL(ow)
-    mov r15,[Z]   ;ahora tenemos(igh)
+    mov di,cl
+    dec di
+    mul di,bp
+    add al,r0
+    adc ah,r1
+    add al,r0   ;adicion doble de los punteros   
+    adc ah,r1   ;2 byte por cada entrada a la tabla "table entry"
+    mov r14,[ax+]  ;Ahora tenemos wrL(ow)
+    mov r15,[ax]   ;ahora tenemos(igh)
     
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -122,16 +127,16 @@ _Inicio_bucle_jj:    ;Etiqueta del ciclo para volver al inicio.
                                  
                                 ;(Problema es del rango de salto brsh)
                                 
-    inc r18                  ; Se incrementa jj en 1.
-    cmp r7,r18
+    inc dl                 ; Se incrementa jj en 1.
+    cmp si,dl              ; compara jj con nn2-m
     jge _Inicio_bucle_jj  
     ;Se termina el loop jj
-    mov r16,r19
-    SHR r16        ;iiende:=mmax div 2
-    cmp r17,r16              
+    mov di,bh
+    SHR di        ;iiende:=mmax div 2
+    cmp cl,di              
     jl _Inicio_bucle_ii
     ;final de for_schleife_ii
-    mov r19,r21
+    mov bh,ch
     jmp _cicloinicio
 
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -230,26 +235,33 @@ jmp _final       ;fin
 
 _cuerpo_jj:
 ;Calculo de los indices i y j
-        mov r22,r23
-        mul r18,r21    ;r0 := jj*istep
-        mov r22,r0            
-        add r22,r23         ;i:=m+jj*istep
-        mov r16,r22
-        add r16,r19
-        mov r20, r16      ;j:=i+mmax
-		
+
+	push cl
+	push bl
+
+        mov bl,dh
+        mul dl,ch    ;r0 := jj*istep
+        mov bl,r0            
+        add bl,dh         ;i:=m+jj*istep
+        mov di,bl
+        add di,bh
+        mov cl, di      ;j:=i+mmax
+	
+	push ah
+	push al	
 		
 ;Obtener los datos[j] y los datos[j+1] de la SRAM 
-        mov XH,0 ; se inicializa en 0
-        mov XL,$0080 ; se posiciona
-        add XL,r20    ; inicia el recorrido
-        adc XH,r6 ;Recordemos que los datos se guardan en 16 bits
-        add XL,r20       ;se duplica el indice
-        adc XH,r6 ;de igual modo se guarda en el formato de 16 bits
-        mov R8,X+     ;[j]low-byte hole
-        mov R9,X+     ;j]High-byte hole
-        mov R10,X+     ;[j+1]low-Byte hole
-        mov R11,X      ;[j+1]High-Byte hole
+
+        mov ah,0 ; se inicializa en 0
+        mov al,$0080 ; se posiciona
+        add al,cl    ; inicia el recorrido
+        adc ah, 0 ;Recordemos que los datos se guardan en 16 bits
+        add al,cl       ;se duplica el indice
+        adc ah, 0 ;de igual modo se guarda en el formato de 16 bits    __________   Avance  ___________
+        mov R8,ax+     ;[j]low-byte hole
+        mov R9,ax+     ;j]High-byte hole
+        mov R10,ax+     ;[j+1]low-Byte hole
+        mov R11,ax      ;[j+1]High-Byte hole
 		
 		
 ;Para el calculo de tempi y tempr se requien multiples multiplicaciones y los datos de la pila
@@ -333,8 +345,8 @@ _cuerpo_jj:
         adc XH,r6
         add XL,j
         adc XH,r6
-        st X+,R8
-        st X,R9
+        mov [X+],R8
+        mov [X],R9
 ;Se obtienen los datos [i+1] de la SRAM 
         mov XH,0
         mov XL,$0080
@@ -359,8 +371,8 @@ _cuerpo_jj:
         add XL,j
         adc XH,r6
         adiw XH:XL,2
-        st X+,R8
-        st X,R9
+        mov [X+],R8
+        mov [X],R9
 ;data[i+1]:=data[i+1]+tempi
         SAR R11
         ror R10
@@ -373,8 +385,8 @@ _cuerpo_jj:
         add XL,r22
         adc XH,r6
         adiw XH:XL,2
-        st X+,R10
-        st X,R11
+        mov [X+],R10
+        mov [X],R11
 ;Obtenga los datos [i] de la SRAM 
         mov XH,0
         mov XL,$0080
@@ -395,8 +407,8 @@ _cuerpo_jj:
         adc XH,r6
         add XL,r22
         adc XH,r6
-        st X+,R10
-        st X,R11
+        mov [X+],R10
+        mov [X],R11
         ret     ;Se retorna a Schleife_jj
 
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -431,8 +443,12 @@ _loopcalculos: ;para el buvle de calculo
     MOV r18, R8
     add r18,R10
     adc r19,R11        ;h1r:=data[i1]+data[i3]
-    sts $60,r18
-    sts $61,r19       ;se guarda h1r en sram-location
+    mov rtemp, $60
+    mov [rtemp], r18
+     ;sts $60,r18
+    mov rtemp, $61
+    mov [rtemp], r19
+     ;sts $61,r19       ;se guarda h1r en sram-location
     mov r19, R9
     mov r18, R8
     sub r18,R10
@@ -442,8 +458,12 @@ _loopcalculos: ;para el buvle de calculo
     mov r16,1
     add r18,r16
     adc r19,r6
-    sts $66,r18
-    sts $67,r19       ;se guarda h1r en sram-location
+      ;sts $66,r18
+    mov rtemp, $66
+    mov [rtemp], r18
+      ;sts $67,r19       ;se guarda h1r en sram-location
+    mov rtemp, $67
+    mov [rtemp], r19
     
     
 ;***** Calculo de h1i y h2r
@@ -473,12 +493,23 @@ _loopcalculos: ;para el buvle de calculo
     mov r18, R8
     sub r18,R10
     sbb r19,R11        
-    sts $62,r18
-    sts $63,r19       ;se guarda h1i en sram-location
+      ;sts $62,r18
+    mov rtemp, $62
+    mov [rtemp], r18
+      ;sts $63,r19       ;se guarda h1i en sram-location
+    mov rtemp, $63
+    mov [rtemp], r19
+
     add R8,R10
     adc R9,R11     
-    sts $64,R8
-    sts $65,R9        ;se guarda h2r en sram-location
+      ;sts $64,R8
+    mov rtemp, $64
+    mov [rtemp], R8
+
+      ;sts $65,R9        ;se guarda h2r en sram-location
+    mov rtemp, $65
+    mov [rtemp], R9
+
         push r23
         push r22
         push r21
@@ -519,8 +550,8 @@ _loopcalculos: ;para el buvle de calculo
         adc XH,r6
         add XL,r2
         adc XH,r6
-        st X+,R8
-        st X ,R9
+        mov [X+],R8
+        mov [X] ,R9
 ; **** Data[i2]:=h1i+wr*h2i+wi*h2r
         mov R21, r13
         mov R20, r12
@@ -552,8 +583,8 @@ _loopcalculos: ;para el buvle de calculo
         adc XH,r6
         add XL,r2
         adc XH,r6
-        st X+,R8
-        st X ,R9
+        mov [X+],R8
+        mov [X] ,R9
 ; **** Data[i3]:=h1r-wr*h2r+wi*h2i
         mov R21, r15
         mov R20, r14
@@ -585,8 +616,8 @@ _loopcalculos: ;para el buvle de calculo
         adc XH,r6
         add XL,r4
         adc XH,r6
-        st X+,R8
-        st X ,R9
+        mov [X+],R8
+        mov [X] ,R9
 ; **** Data[i4]:=-h1i+wr*h2i+wi*h2r
         mov R21, r13
         mov R20, r12
@@ -618,8 +649,8 @@ _loopcalculos: ;para el buvle de calculo
         adc XH,r6
         add XL,r5
         adc XH,r6
-        st X+,R8
-        st X ,R9
+        mov [X+],R8
+        mov [X] ,R9
         pop r16
         pop r17
         pop r18
@@ -646,12 +677,34 @@ _dccompensacion:
         ror R10
         sar r19
         ror r18
-        sts $0080+2,R8
-        sts $0080+3,R9
-        sts $0080+4,r18
-        sts $0080+5,r19
+           ;sts $0080+2,R8
+	mov rtemp, $0080
+	add rtemp,2
+        mov [rtemp], R8
+
+           ;sts $0080+3,R9
+	;mov rtemp, $0080
+	;add rtemp,3
+	add rtemp,1
+        mov [rtemp], R9
+
+           ;sts $0080+4,r18
+	;mov rtemp, $0080
+	;add rtemp,4
+	add rtemp,1
+    	mov [rtemp], r18
+
+           ;sts $0080+5,r19
+	;mov rtemp, $0080
+	;add rtemp, 5
+	add rtemp, 1
+	mov [rtemp], r19
+
     ret
-;ende DC-kompensation
+
+
+
+;ende DC-compensation
 
 
 
@@ -684,8 +737,8 @@ _ordenamientomariposa:
 		adc XH,r6
 		add XL,r0
 		adc XH,r6
-		st X+,R8    ;Se guarda primero el byte inferior
-		st X,R9      ;Se guarda el byte superior 
+		mov [X+],R8    ;Se guarda primero el byte inferior
+		mov [X],R9      ;Se guarda el byte superior 
 	                ;Guardar de forma ordenada los datos en SRAM
 		inc r22
 		cmp r22,nn2  
@@ -1029,3 +1082,4 @@ posicionvalores32:
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
