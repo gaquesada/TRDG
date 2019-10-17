@@ -1,5 +1,6 @@
 ﻿section .data
 	nn2 db 128
+	mem db $F0
 section .text
 	global _start
 
@@ -8,15 +9,21 @@ section .text
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 _start:
+	
+	push ebp
+	
+	mov esp, ebp
 
 	call _ordenamiento_mariposa
 
 	;asignación de valor de nn2  =>   
-        ;mov bl
+        mov bl, nn2
 
 	mov bh,2   ; MMAX=AX
 	
 	call _cicloinicio
+	
+	pop ebp	
 
 	mov rax,60
 	mov rdi, 0
@@ -46,7 +53,7 @@ _cicloinicio:            ;Etiqueta para el ciclo de inicio.
 
 _cuerpodeciclo:            ;Etiqueta para el ciclo de Body.
 
-		mov ch, bl                  ;Movimiento de datos, se mueve mmax.
+		mov ch, bh                  ;Movimiento de datos, se mueve mmax.
 
 		lsl ch           ;r21:=2*mmax / r21:=2*mmax     LSL es un shift lógico de una posición a la izquierda
 
@@ -73,30 +80,34 @@ _Inicio_bucle_ii:    ;for ii=1 to (mmax div 2)
 ;.def   dd8u    =r24        ;dividend 
 ;.def   dv8u    =r25        ;divisor  ah
 
-
-    mov si,al      ;r7:=nn2-m div istep   si
+	
+    mov sil,al      ;r7:=nn2-m div istep   si
     
     xor dl, dl                  ;jj:=0  Inicialización para el loop   
 
 ;Ahora se obtienen los valores de coseno
 
+    push dl
+
     mov ah,high(2*cosinetab)
     mov al, low(2*cosinetab)
-    mov bp,nn2
+    mov bpl,nn2
     mov di,bh
     SHR di 
-pp: SHR bp
+pp: SHR bpl
     SHR di
     jne pp
     mov di,cl
     dec di
-    mul di,bp
-    add al,r0
-    adc ah,r1
-    add al,r0   ;adicion doble de los punteros 
+    mul di,bpl
+    add al,dil
+    adc ah,0
+    add al,dil   ;adicion doble de los punteros 
     adc ah,r1   ;2 byte por cada entrada a la tabla "table entry" 
-    mov dh,[ax+]  ;Ahora tenemos wrL(ow)
-    mov r13,[ax]   ;ahora tenemos(igh)
+    mov dl,[ax+]  ;Ahora tenemos wrL(ow)
+    mov dh,[ax]   ;ahora tenemos(igh)
+    mov [mem], dx
+
 ;Ahora se obtienen los valores de seno
 
     mov ah,high(2*sinetab)
@@ -110,13 +121,16 @@ pq: SHR bp
     mov di,cl
     dec di
     mul di,bp
-    add al,r0
-    adc ah,r1
-    add al,r0   ;adicion doble de los punteros   
+    add al,dil
+    adc ah,0
+    add al,dil   ;adicion doble de los punteros   
     adc ah,r1   ;2 byte por cada entrada a la tabla "table entry"
-    mov r14,[ax+]  ;Ahora tenemos wrL(ow)
-    mov r15,[ax]   ;ahora tenemos(igh)
+    mov dl,[ax+]  ;Ahora tenemos wrL(ow)
+    mov dh,[ax]   ;ahora tenemos(igh)
     
+    mov [mem+4], dx
+
+    pop dl
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 _Inicio_bucle_jj:    ;Etiqueta del ciclo para volver al inicio.
@@ -191,6 +205,7 @@ _looping:
     adc ZH,r6
     mov r14,Z+  ;ahora se tiene wiL(ow)
     mov r15,Z   ;ahora se tiene wiH(igh)
+
     call _loopcalculos    ;subrutina, el bucle puede terminar con brlo
     
 ;test si FOR_Schleife ya termino
@@ -200,6 +215,7 @@ _looping:
     inc r16
     cmp r22,r16
     jl _looping
+
 
 for_final:            ;Resorting is done
 nop
@@ -239,9 +255,11 @@ _cuerpo_jj:
 	push cl
 	push bl
 
+	mov [mem+32], bl
+
         mov bl,dh
-        mul dl,ch    ;r0 := jj*istep
-        mov bl,r0            
+        mul dl,ch    ;r0 := jj*istep   ;<=
+        mov bl,idl      <=r0:Dir      
         add bl,dh         ;i:=m+jj*istep
         mov di,bl
         add di,bh
@@ -249,6 +267,7 @@ _cuerpo_jj:
 	
 	push ah
 	push al	
+	push bh
 		
 ;Obtener los datos[j] y los datos[j+1] de la SRAM 
 
@@ -257,166 +276,250 @@ _cuerpo_jj:
         add al,cl    ; inicia el recorrido
         adc ah, 0 ;Recordemos que los datos se guardan en 16 bits
         add al,cl       ;se duplica el indice
-        adc ah, 0 ;de igual modo se guarda en el formato de 16 bits    __________   Avance  ___________
-        mov R8,ax+     ;[j]low-byte hole
-        mov R9,ax+     ;j]High-byte hole
-        mov R10,ax+     ;[j+1]low-Byte hole
-        mov R11,ax      ;[j+1]High-Byte hole
+        adc ah, 0 ;de igual modo se guarda en el formato de 16 bits   
+	mov bx,ax+
+	mov cx,ax+	
+
+        ;mov R8,ax+     ;[j]low-byte hole
+        ;mov R9,ax+     ;j]High-byte hole
+        ;mov R10,ax+     ;[j+1]low-Byte hole
+        ;mov R11,ax      ;[j+1]High-Byte hole
 		
 		
 ;Para el calculo de tempi y tempr se requien multiples multiplicaciones y los datos de la pila
-        push r23
-        push r22
-        push r21
-        push r20
-        push r19
-        push r18
-        push r17
-        push r16
+        push dh
+        push dl
+        push di
 		
 ;Calculo de tempr
-        mov r21, r13 ;movw r21:r20,r13:r12
-        mov r20, r12
-        mov r23, R9
-        mov r22, R8
-        call muls16x16_32 ;tempr:=wr*data[j] (16bit signed)
-        MOV r3,r19  ;solo tomamos los high-result-bytes 
-        MOV r2,r18  
-        mov r21, r15 ;movw r21:r20,r15:r14
-        mov r20, r14
-        mov r23, R11 ;movw r23:r22,R11:R10
-        mov r22, R10
-        call muls16x16_32 ;tempi:=wi*data[j+1] (16bit signed)
-        MOV r5,r19      ;solo tomamos los HIGH-result-bytes 
-        MOV r4,r18  
-        sub r2,r4
-        sbb r3,r5       ;tempr := wr*data[j]-wi*data[j+1]   
-;Calculo de tempi
-        push r2         
-        push r3
-        mov r21, r13
-        mov r20, r12
-        mov r23, R11
-        mov r22, R10
+	
+	mov dx, [mem]
+	
+	mul edx,ebx 
 
-        call muls16x16_32      ;tempr:=wr*data[j+1] (16bit signed)
-        MOV r3,r19  ;solo tomamos los high-result-bytes 
-        MOV r2,r18  
-        mov r21, r15
-        mov r20, r14
-        mov r23, R9
-        Mov r22, R8
-        call muls16x16_32 ;tempi:=wi*data[j] (16bit signed)
-        MOV r5,r19  ;solo tomamos los high-result-bytes   
-        MOV r4,r18  
-        add r4,r2
-        adc r5,r3       ;tempi := wr*data[j+1]+wi*data[j]   
-        pop r3
-        pop r2
-        pop r16
-        pop r17
-        pop r18
-        pop r19
-        pop r20
-        pop r21
-        pop r22
-        pop r23
+	mov [mem+8], edx	
+
+	
+	mov edx, [mem+4]
+	
+	mul edx,ecx 
+
+	mov [mem+12], edx	
+	
+
+	push bx	
+
+	mov dx, [mem+10]	
+	mov bx, [mem+14]
+	sub dx, bx
+		
+	pop bx
+
+	mov [mem+24], dx
+	
+        ;sub r2,r4
+        ;sbb r3,r5       ;tempr := wr*data[j]-wi*data[j+1]   
+
+;Calculo de tempi
+
+        ;push dx     
+        ;push bx
+	;push cx
+
+	mov dx, [mem]
+	
+	mul edx,ecx 
+
+	mov [mem+16], edx
+	
+
+	mov dx, [mem+4]
+	
+	mul edx,ebx 
+
+	mov [mem+20], edx
+
+	push bx
+
+	mov dx, [mem+18]	
+	mov bx, [mem+22]
+	add dx, bx
+	
+	pop bx
+	
+	mov [mem+28], dx
+
+	;push dx
+   
+        ;tempi := wr*data[j+1]+wi*data[j]   
+
+
+
+	mov bl, [mem+32]	
+
 ;multiplicaciones terminadas, se apila y registra en orden
 
+
 ;Obtenga datos [i] de la SRAM
-        mov XH,0 ;se inicializa en 0
-        mov XL,$0080 ; se posiciona en los datos
-        add XL,r22
-        adc XH,r6
-        add XL,r22
-        adc XH,r6
-        mov R10,X+     ;[i]Low-Byte Hole
-        mov R11,X      ;[i]high-Byte hole
+        mov ah,0 ;se inicializa en 0
+        mov al,$0080 ; se posiciona en los datos
+        add al,bl
+        adc ah,0 ;cl
+        add al,bl
+        adc ah, 0 ;cl
+	;carga de dato[i]
+	
+	push dx  
+	mov dx, ax+
+	
+
 ;data[j]:=data[i]-tempr
-        mov R9, R11;movw R9:R8, R11:R10
-        mov R8, R10
-        SAR R9
-        ror R8
-        sub R8,r2
-        sbb R9,r3
-        mov XH,0
-        mov XL,$0080
-        add XL,j
-        adc XH,r6
-        add XL,j
-        adc XH,r6
-        mov [X+],R8
-        mov [X],R9
+
+	push bx	
+	mov bx, dx
+
+        ;mov R9, R11;movw R9:R8, R11:R10
+        ;mov R8, R10
+
+        sar bh  
+        ror bl  
+
+	push cx
+	mov cx, [mem+24]
+
+	sub bx, cx		
+	
+	pop cx
+
+        ;sub R8,r2
+        ;sbb R9,r3
+
+	
+
+        mov ah,0
+        mov al,$0080
+        add al,cl
+        adc ah, 0      ;r6
+        add al, cl
+        adc ah, 0      ;r6
+
+        mov [ax+],bx
+                       ;mov [ax],R8, R9
+	pop bx
+	
+	pop dx
+	
 ;Se obtienen los datos [i+1] de la SRAM 
-        mov XH,0
-        mov XL,$0080
-        add XL,r22
-        adc XH,r6
-        add XL,r22
-        adc XH,r6
-        adiw XH:XL,2
-        mov R10,X+     ;hole Data[i+1]low-Byte
-        mov R11,X      ;Hole Data[i+1]high-Byte
+	
+        mov ah,0
+        mov al,$0080
+        add al,bl
+        adc ah,0   ;r6
+        add al,bl
+        adc ah,0   ;r6
+	add ax,2
+        	
+	mov dx,ax+
+	
+
 ;data[j+1]:=data[i+1]-tempi
-        mov R9, R11
-        mov R8, R10
-        SAR R9
-        ror R8
-        sub R8,r4
-        sbb R9,r5
-        mov XH,0
-        mov XL,$0080
-        add XL,j
-        adc XH,r6
-        add XL,j
-        adc XH,r6
-        adiw XH:XL,2
-        mov [X+],R8
-        mov [X],R9
+	
+	push bx	
+	mov bx, dx        
+	sar bh  
+        ror bl
+
+	push cx
+	mov cx, [mem+28]
+
+	sub bx, cx
+
+	pop cx
+
+	mov ah,0
+        mov al,$0080
+        add al,cl
+        adc ah, 0      ;r6
+        add al, cl
+        adc ah, 0      ;r6
+
+	add ax,2
+
+        mov [ax+],bx
+                     
+	pop bx
+
+
 ;data[i+1]:=data[i+1]+tempi
-        SAR R11
-        ror R10
-        add R10,r4
-        adc R11,r5
-        mov XH,0
-        mov XL,$0080
-        add XL,r22
-        adc XH,r6
-        add XL,r22
-        adc XH,r6
-        adiw XH:XL,2
-        mov [X+],R10
-        mov [X],R11
+        sar dh
+        ror dl
+
+	push cx
+	mov cx, [mem+28]
+	add dx, cx
+	pop cx
+
+        mov ah,0
+        mov al,$0080
+        add al,bl
+        adc ah,0 ;r6
+        add al,bl
+        adc ah,0 ;r6
+	add ax,2
+	mov [ax+], dx
+
+
 ;Obtenga los datos [i] de la SRAM 
-        mov XH,0
-        mov XL,$0080
-        add XL,r22
-        adc XH,r6
-        add XL,r22
-        adc XH,r6
-        mov R10,X+     ;hole Data[i]low-Byte
-        mov R11,X      ;Hole Data[i]high-Byte
+        mov ah,0
+        mov al,$0080
+        add al,bl
+        adc ah,0 ;r6
+        add al,bl
+        adc ah,0; r6
+	mov dx, ax+
+
+
 ;data[i]:=data[i]+tempr
-        SAR R11
-        ror R10
-        add R10,r2
-        adc R11,r3
-        mov XH,0
-        mov XL,$0080
-        add XL,r22
-        adc XH,r6
-        add XL,r22
-        adc XH,r6
-        mov [X+],R10
-        mov [X],R11
+        sar dh
+        ror dl
+	
+	push cx
+	mov cx, [mem+24]
+
+	add dx, cx		
+	
+	pop cx	
+
+        mov ah,0
+        mov al,$0080
+        add al,bl
+        adc ah,0  ; r6
+        add al,bl
+        adc ah, 0 ; r6
+	
+	mov [ax+], dx
+	
+
+	pop di
+	pop dl
+	pop dh
+	pop bh
+	pop al
+	pop ah
+	pop bl
+	pop cl
+
+        	;mov [X+],R10
+        	;mov [X],R11
+
         ret     ;Se retorna a Schleife_jj
 
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-_loopcalculos: ;para el buvle de calculo
-;***** Calculo de h1r y h2i
-;Datos hole[i1] en reg. data2:data1
+;_loopcalculos: ;para el buvle de calculo. Se utiliza dentro de ciclo que modifica posiciones para valores reales
+***** Calculo de h1r y h2i
+Datos hole[i1] en reg. data2:data1
     mov XH,$0
     mov XL,$0080
     add XL,r2
@@ -661,87 +764,84 @@ _loopcalculos: ;para el buvle de calculo
         pop r23
     ret     ;
 
+
+
+
+
 _dccompensacion:
-        lds R8,$0080+2
-        lds R9,$0080+3
-        lds R10,$0080+4
-        lds R11,$0080+5
+
+        lds al,$0080+2
+        lds ah,$0080+3
+        lds bl,$0080+4
+        lds bh,$0080+5
         
-        mov r19, R9
-        mov r18, R8
-        add R8,R10
-        adc R9,R11
-        sub r18,R10
-        sbb r19,R11
-        sar R11
-        ror R10
-        sar r19
-        ror r18
+        mov ch, ah
+        mov cl, al
+        add al,bl
+        adc ah,bh
+        sub cl,bl
+        sbb ch,bh
+        sar bh
+        ror bl
+        sar ch
+        ror cl
            ;sts $0080+2,R8
-	mov rtemp, $0080
-	add rtemp,2
-        mov [rtemp], R8
+	mov dx, $0080
+	add dx,2
+        mov [dx], al
 
-           ;sts $0080+3,R9
-	;mov rtemp, $0080
-	;add rtemp,3
-	add rtemp,1
-        mov [rtemp], R9
+	add dx,1
+        mov [dx], ah
 
-           ;sts $0080+4,r18
-	;mov rtemp, $0080
-	;add rtemp,4
-	add rtemp,1
-    	mov [rtemp], r18
+	add dx,1
+    	mov [dx], cl
 
-           ;sts $0080+5,r19
-	;mov rtemp, $0080
-	;add rtemp, 5
-	add rtemp, 1
-	mov [rtemp], r19
+	add dx,1
+	mov [dx], ch
 
     ret
 
 
-
-;ende DC-compensation
+;final de DC-compensation
 
 
 
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ;------------------------------------------ORDENAMIENTO MARIPOSA ----------------------------------------------------------------------------------------------------
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 _ordenamientomariposa:
 	;Se copian los datos en la SRAM.
 	;Los datos de prueba se almacenan en formato de 16 bits signados (-16384 ...+16384). 
 	;FFT tambien da datos en 16 bits
-	mov ZH, high*(2*testdata)
-	mov ZL, low*(2*testdata)
-	xor r22, r22
+
+	mov ch, high*(2*testdata)
+	mov cl, low*(2*testdata)
+	xor bl, bl
 
 	captarbloque: ;Al copiar los valores se salva uno
-		mov R8 ,[Z+]    ;Se cargan los valores de la tabla de origen
-		mov R9,[Z+]
-		push ZH
-		push ZL
-		mov ZH, high(2*posicionvalores128)       ;para nn2 <> usar 128
-		mov ZL, low(2*posicionvalores128)       ;tabla apropiada
-		add ZL,r22
-		adc ZH,r6
-		mov r0,[Z] ;Para salvar la info se obtiene la posicion 
-		pop ZL
-		pop ZH
-		mov XH,0
-		mov XL,$0080
-		add XL,r0
-		adc XH,r6
-		add XL,r0
-		adc XH,r6
-		mov [X+],R8    ;Se guarda primero el byte inferior
-		mov [X],R9      ;Se guarda el byte superior 
+		mov al ,[cx+]    ;Se cargan los valores de la tabla de origen
+		mov ah,[cx+]
+		push ch
+		push cl
+		mov ch, high(2*posicionvalores128)       ;para nn2 <> usar 128
+		mov cl, low(2*posicionvalores128)       ;tabla apropiada
+		add cl,bl
+		adc ch, 0 
+		mov dil,[cx] ;Para salvar la info se obtiene la posicion 
+		pop cl
+		pop ch
+		mov dh,0
+		mov dl,$0080
+		add dl,dil
+		adc dh, 0
+		add dl,dil
+		adc dh, 0
+		mov [dx+],al    ;Se guarda primero el byte inferior
+		mov [dx],ah     ;Se guarda el byte superior 
 	                ;Guardar de forma ordenada los datos en SRAM
-		inc r22
-		cmp r22,nn2  
+		inc bl
+		cmp bl,nn2  
 		jne captarbloque
 
 		;Ahora los datos para la fft se llaman y almacenan en la SRAM
@@ -814,81 +914,86 @@ muls16x16_32:
 ;***** Subroutine Register Variables
  
 
-div8u:	sub	r15,r15	;clear remainder and carry
+div8u:	
+
+	sub	bpl,bpl	;clear remainder and carry
 	
-	rol	r24		;shift left dividend
-	rol	r15		;shift dividend into remainder
-	sub	r15,r25	;remainder = remainder - divisor
+	rol	al		;shift left dividend
+	rol	bpl		;shift dividend into remainder
+	sub	bpl,ah	;remainder = remainder - divisor
 	jnc	d8u_1		;if result negative
-	add	r15,r25	;    restore remainder
+	add	bpl,ah	;    restore remainder
 	clc			;    clear carry to be shifted into result
 	jmp	d8u_2		;else
-d8u_1:	sec			;    set carry to be shifted into result
 
-d8u_2:	rol	r24		;shift left dividend
-	rol	r15		;shift dividend into remainder
-	sub	r15,r25	;remainder = remainder - divisor
+d8u_1:	sec			;    set carry to be shifted into result  
+
+d8u_2:	rol	al		;shift left dividend
+	rol	bpl		;shift dividend into remainder
+	sub	bpl,ah	;remainder = remainder - divisor
 	jnc	d8u_3		;if result negative
-	add	r15,r25	;    restore remainder
+	add	bpl,ah	;    restore remainder
 	clc			;    clear carry to be shifted into result
 	jmp	d8u_4		;else
-d8u_3:	sec			;    set carry to be shifted into result
+d8u_3:	sec			;    set carry to be shifted into result   
 
-d8u_4:	rol	r24		;shift left dividend
-	rol	r15		;shift dividend into remainder
-	sub	r15,r25	;remainder = remainder - divisor
+d8u_4:	rol	al		;shift left dividend
+	rol	bpl		;shift dividend into remainder
+	sub	bpl,ah	;remainder = remainder - divisor
 	jnc	d8u_5		;if result negative
-	add	r15,r25	;    restore remainder
+	add	bpl,ah	;    restore remainder
 	clc			;    clear carry to be shifted into result
 	jmp	d8u_6		;else
-d8u_5:	sec			;    set carry to be shifted into result
+d8u_5:	sec			;    set carry to be shifted into result  
 
-d8u_6:	rol	r24		;shift left dividend
-	rol	r15		;shift dividend into remainder
-	sub	r15,r25	;remainder = remainder - divisor
+d8u_6:	rol	al		;shift left dividend
+	rol	bpl		;shift dividend into remainder
+	sub	bpl,ah	;remainder = remainder - divisor
 	jnc	d8u_7		;if result negative
-	add	r15,r25	;    restore remainder
+	add	bpl,ah	;    restore remainder
 	clc			;    clear carry to be shifted into result
 	jmp	d8u_8		;else
-d8u_7:	sec			;    set carry to be shifted into result
+d8u_7:	sec			;    set carry to be shifted into result     
 
-d8u_8:	rol	r24		;shift left dividend
-	rol	r15		;shift dividend into remainder
-	sub	r15,r25	;remainder = remainder - divisor
+d8u_8:	rol	al		;shift left dividend
+	rol	bpl		;shift dividend into remainder
+	sub	bpl,ah	;remainder = remainder - divisor
 	jnc	d8u_9		;if result negative
-	add	r15,r25	;    restore remainder
+	add	bpl,ah	;    restore remainder
 	clc			;    clear carry to be shifted into result
 	jmp	d8u_10		;else
-d8u_9:	sec			;    set carry to be shifted into result
+d8u_9:	sec			;    set carry to be shifted into result     
 
-d8u_10:	rol	r24		;shift left dividend
-	rol	r15		;shift dividend into remainder
-	sub	r15,r25	;remainder = remainder - divisor
+d8u_10:	rol	al		;shift left dividend
+	rol	bpl		;shift dividend into remainder
+	sub	bpl,ah	;remainder = remainder - divisor
 	jnc	d8u_11		;if result negative
-	add	r15,r25	;    restore remainder
+	add	bpl,ah	;    restore remainder
 	clc			;    clear carry to be shifted into result
 	jmp	d8u_12		;else
 d8u_11:	sec			;    set carry to be shifted into result
 
-d8u_12:	rol	r24		;shift left dividend
-	rol	r15		;shift dividend into remainder
-	sub	r15, r25	;remainder = remainder - divisor
+d8u_12:	rol	al		;shift left dividend
+	rol	bpl		;shift dividend into remainder
+	sub	bpl, ah	;remainder = remainder - divisor
 	jnc	d8u_13		;if result negative
-	add	r15,	;    restore remainder
+	add	bpl,	;    restore remainder
 	clc			;    clear carry to be shifted into result
 	jmp	d8u_14		;else
 d8u_13:	sec			;    set carry to be shifted into result
 
-d8u_14:	rol	dr24		;shift left dividend
-	rol	r15		;shift dividend into remainder
-	sub	r15,r25	;remainder = remainder - divisor
+d8u_14:	rol	al		;shift left dividend
+	rol	bpl		;shift dividend into remainder
+	sub	bpl,ah	;remainder = remainder - divisor
 	jnc	d8u_15		;if result negative
-	add	r15,r25	;    restore remainder
+	add	bpl,ah	;    restore remainder
 	clc			;    clear carry to be shifted into result
 	jmp	d8u_16		;else
 d8u_15:	sec			;    set carry to be shifted into result
 
-d8u_16:	rol	r24		;shift left dividend
+d8u_16:	rol	al		;shift left dividend
+
+
 	ret
 
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1082,4 +1187,3 @@ posicionvalores32:
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
