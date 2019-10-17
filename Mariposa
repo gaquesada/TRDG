@@ -288,6 +288,10 @@ _cuerpo_jj:
 		
 ;Para el calculo de tempi y tempr se requien multiples multiplicaciones y los datos de la pila
         push dh
+        ;push bl
+        ;push ch
+        ;push cl
+        ;push bh
         push dl
         push di
 		
@@ -299,6 +303,13 @@ _cuerpo_jj:
 
 	mov [mem+8], edx	
 
+        ;mov r21, r13 ;movw r21:r20,r13:r12
+        ;mov r20, r12
+        ;mov r23, R9
+        ;mov r22, R8
+        ;call muls16x16_32 ;tempr:=wr*data[j] (16bit signed)
+	;MOV r3,r19  ;solo tomamos los high-result-bytes 
+        ;MOV r2,r18  
 	
 	mov edx, [mem+4]
 	
@@ -306,6 +317,14 @@ _cuerpo_jj:
 
 	mov [mem+12], edx	
 	
+        
+	;mov r21, r15 ;movw r21:r20,r15:r14
+        ;mov r20, r14
+        ;mov r23, R11 ;movw r23:r22,R11:R10
+        ;mov r22, R10
+        ;call muls16x16_32 ;tempi:=wi*data[j+1] (16bit signed)
+        ;MOV r5,r19      ;solo tomamos los HIGH-result-bytes 
+        ;MOV r4,r18  
 
 	push bx	
 
@@ -331,6 +350,15 @@ _cuerpo_jj:
 	mul edx,ecx 
 
 	mov [mem+16], edx
+
+        ;mov r21, r13
+        ;mov r20, r12
+        ;mov r23, R11
+        ;mov r22, R10
+
+        ;call muls16x16_32      ;tempr:=wr*data[j+1] (16bit signed)
+        ;MOV r3,r19  ;solo tomamos los high-result-bytes 
+        ;MOV r2,r18  
 	
 
 	mov dx, [mem+4]
@@ -339,6 +367,15 @@ _cuerpo_jj:
 
 	mov [mem+20], edx
 
+
+        ;mov r21, r15
+        ;mov r20, r14
+        ;mov r23, R9
+        ;Mov r22, R8
+        ;call muls16x16_32 ;tempi:=wi*data[j] (16bit signed)
+        ;MOV r5,r19  ;solo tomamos los high-result-bytes   
+        ;MOV r4,r18  
+	
 	push bx
 
 	mov dx, [mem+18]	
@@ -350,10 +387,20 @@ _cuerpo_jj:
 	mov [mem+28], dx
 
 	;push dx
-   
-        ;tempi := wr*data[j+1]+wi*data[j]   
 
+        ;add r4,r2
+        ;adc r5,r3       ;tempi := wr*data[j+1]+wi*data[j]   
 
+        ;pop r3
+        ;pop r2
+        ;pop r16
+        ;pop r17
+        ;pop r18
+        ;pop r19
+        ;pop r20
+        ;pop r21
+        ;pop r22
+        ;pop r23
 
 	mov bl, [mem+32]	
 
@@ -369,8 +416,12 @@ _cuerpo_jj:
         adc ah, 0 ;cl
 	;carga de dato[i]
 	
-	push dx  
+	push dx  <=
 	mov dx, ax+
+
+        ;mov R10,ax+     ;[i]Low-Byte Hole
+        ;mov R11,ax      ;[i]high-Byte hole
+	
 	
 
 ;data[j]:=data[i]-tempr
@@ -418,9 +469,11 @@ _cuerpo_jj:
         add al,bl
         adc ah,0   ;r6
 	add ax,2
-        	
+        	;adiw XH:XL,2
 	mov dx,ax+
 	
+        ;mov R10,ax+     ;hole Data[i+1]low-Byte
+        ;mov R11,ax      ;Hole Data[i+1]high-Byt
 
 ;data[j+1]:=data[i+1]-tempi
 	
@@ -466,7 +519,11 @@ _cuerpo_jj:
         add al,bl
         adc ah,0 ;r6
 	add ax,2
+        	;adiw XH:XL,2
+
 	mov [ax+], dx
+        	;mov [X+],R10
+        	;mov [X],R11
 
 
 ;Obtenga los datos [i] de la SRAM 
@@ -477,7 +534,8 @@ _cuerpo_jj:
         add al,bl
         adc ah,0; r6
 	mov dx, ax+
-
+        	;mov R10,X+     ;hole Data[i]low-Byte
+        	;mov R11,X      ;Hole Data[i]high-Byte
 
 ;data[i]:=data[i]+tempr
         sar dh
@@ -489,6 +547,9 @@ _cuerpo_jj:
 	add dx, cx		
 	
 	pop cx	
+
+         ;add dl,r2
+         ;adc dh,r3
 
         mov ah,0
         mov al,$0080
@@ -511,15 +572,14 @@ _cuerpo_jj:
 
         	;mov [X+],R10
         	;mov [X],R11
-
         ret     ;Se retorna a Schleife_jj
 
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
-;_loopcalculos: ;para el buvle de calculo. Se utiliza dentro de ciclo que modifica posiciones para valores reales
-***** Calculo de h1r y h2i
-Datos hole[i1] en reg. data2:data1
+_loopcalculos: ;para el buvle de calculo
+;***** Calculo de h1r y h2i
+;Datos hole[i1] en reg. data2:data1
     mov XH,$0
     mov XL,$0080
     add XL,r2
@@ -766,8 +826,6 @@ Datos hole[i1] en reg. data2:data1
 
 
 
-
-
 _dccompensacion:
 
         lds al,$0080+2
@@ -790,26 +848,35 @@ _dccompensacion:
 	add dx,2
         mov [dx], al
 
+           ;sts $0080+3,R9
+	;mov dx, $0080
+	;add dx,3
 	add dx,1
         mov [dx], ah
 
+           ;sts $0080+4,r18
+	;mov dx, $0080
+	;add dx,4
 	add dx,1
     	mov [dx], cl
 
-	add dx,1
+           ;sts $0080+5,r19
+	;mov dx, $0080
+	;add dx, 5
+	add dx, 1
 	mov [dx], ch
 
     ret
 
 
-;final de DC-compensation
+
+;ende DC-compensation
 
 
 
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ;------------------------------------------ORDENAMIENTO MARIPOSA ----------------------------------------------------------------------------------------------------
 ;--------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
 _ordenamientomariposa:
 	;Se copian los datos en la SRAM.
 	;Los datos de prueba se almacenan en formato de 16 bits signados (-16384 ...+16384). 
@@ -926,7 +993,8 @@ div8u:
 	clc			;    clear carry to be shifted into result
 	jmp	d8u_2		;else
 
-d8u_1:	sec			;    set carry to be shifted into result  
+d8u_1:	mov     sil, 256
+	add     sil, 256 	;    set carry to be shifted into result  
 
 d8u_2:	rol	al		;shift left dividend
 	rol	bpl		;shift dividend into remainder
@@ -935,7 +1003,9 @@ d8u_2:	rol	al		;shift left dividend
 	add	bpl,ah	;    restore remainder
 	clc			;    clear carry to be shifted into result
 	jmp	d8u_4		;else
-d8u_3:	sec			;    set carry to be shifted into result   
+
+d8u_3:	mov     sil, 256
+	add     sil, 256 	;    set carry to be shifted into result   
 
 d8u_4:	rol	al		;shift left dividend
 	rol	bpl		;shift dividend into remainder
@@ -944,7 +1014,9 @@ d8u_4:	rol	al		;shift left dividend
 	add	bpl,ah	;    restore remainder
 	clc			;    clear carry to be shifted into result
 	jmp	d8u_6		;else
-d8u_5:	sec			;    set carry to be shifted into result  
+
+d8u_5:	mov     sil, 256
+	add     sil, 256 	;    set carry to be shifted into result  
 
 d8u_6:	rol	al		;shift left dividend
 	rol	bpl		;shift dividend into remainder
@@ -953,7 +1025,9 @@ d8u_6:	rol	al		;shift left dividend
 	add	bpl,ah	;    restore remainder
 	clc			;    clear carry to be shifted into result
 	jmp	d8u_8		;else
-d8u_7:	sec			;    set carry to be shifted into result     
+
+d8u_7:	mov     sil, 256
+	add     sil, 256 	;    set carry to be shifted into result     
 
 d8u_8:	rol	al		;shift left dividend
 	rol	bpl		;shift dividend into remainder
@@ -962,7 +1036,9 @@ d8u_8:	rol	al		;shift left dividend
 	add	bpl,ah	;    restore remainder
 	clc			;    clear carry to be shifted into result
 	jmp	d8u_10		;else
-d8u_9:	sec			;    set carry to be shifted into result     
+
+d8u_9:	mov     sil, 256
+	add     sil, 256 	;    set carry to be shifted into result     
 
 d8u_10:	rol	al		;shift left dividend
 	rol	bpl		;shift dividend into remainder
@@ -971,7 +1047,9 @@ d8u_10:	rol	al		;shift left dividend
 	add	bpl,ah	;    restore remainder
 	clc			;    clear carry to be shifted into result
 	jmp	d8u_12		;else
-d8u_11:	sec			;    set carry to be shifted into result
+
+d8u_11:	mov     sil, 256
+	add     sil, 256 	;    set carry to be shifted into result
 
 d8u_12:	rol	al		;shift left dividend
 	rol	bpl		;shift dividend into remainder
@@ -980,7 +1058,9 @@ d8u_12:	rol	al		;shift left dividend
 	add	bpl,	;    restore remainder
 	clc			;    clear carry to be shifted into result
 	jmp	d8u_14		;else
-d8u_13:	sec			;    set carry to be shifted into result
+
+d8u_13:	mov     sil, 256
+	add     sil, 256     	;set carry to be shifted into result
 
 d8u_14:	rol	al		;shift left dividend
 	rol	bpl		;shift dividend into remainder
@@ -989,7 +1069,9 @@ d8u_14:	rol	al		;shift left dividend
 	add	bpl,ah	;    restore remainder
 	clc			;    clear carry to be shifted into result
 	jmp	d8u_16		;else
-d8u_15:	sec			;    set carry to be shifted into result
+
+d8u_15:	mov     sil, 256
+	add     sil, 256 	;    set carry to be shifted into result
 
 d8u_16:	rol	al		;shift left dividend
 
