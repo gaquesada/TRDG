@@ -3,54 +3,66 @@ section	.text
 
    global _start    ;must be declared for using gcc
 	
-_start:             ;tell linker entry point
-    mov bh,0
-    mov ah,0
-    mov esi,fr
+_start:                         ;tell linker entry point
+    mov eax,0                 ; contador para save
+    push eax                   ; posicion 1 stack
+    mov ebx,0                  ; contador de w's
+    mov ecx,fr                ; puntero a w's
     
 _loop1:
-    mov edi, DataIn
-    xorps Xmm0,Xmm0
-    mov al,0
-    cmp ah,63
+    mov edx, DataIn          ; puntero datos entrada
+    xorps Xmm0,Xmm0             
+    mov eax,0                 ; contador ciclo fila
+    cmp ebx,63
     jne _loop2
-    mov ah,0
+    mov ebx,0                 ;contador en 0
+    push ebx                  ;contador a stack posicion 2
     jmp _loopprint
     
 _loop2:
-    movss Xmm2,[esi]
-    movss Xmm3,[edi]
+    movss Xmm2,[ecx]         
+    movss Xmm3,[edx]
     mulss Xmm2,Xmm3
     addss Xmm0,Xmm2
-    add edi,2
-    add al,1
-    add esi,2
-    add ah,1
-    cmp al,7
+    add edx,2
+    add eax,1
+    add ecx,2
+    add ebx,1
+    cmp eax,7                 ;final de ciclo de 7
     jne _loop2
     jmp _save
 
 
 _loopprint:
-    add edx,DataOut
-    add edx,ah
+    pop ebx
+    mov edx,DataOut
+    add edx,ebx
+    add ebx,4
+    push ebx
+    
     mov ecx,[edx]
     mov eax,4
     mov edx,32
     mov ebx,1
-    mov ah,4
     int 80h
-    cmp ah,32      ;no puede ser volatil
+    
+    pop ebx
+    mov edx, ebx        ;auxiliar 
+    push ebx
+    cmp edx,32      ;no puede ser volatil
     jne _loopprint
+    
     mov eax,1
     mov ebx,1
     int 80h
     
 _save:
-    mov eax,DataOut
-    add eax,bh
+    pop eax
+    mov ebx,DataOut
+    add eax,ebx
     movss [eax],Xmm0
-    add bh,4
+    add eax,4
+    push eax
     jmp _loop1
     
 	
