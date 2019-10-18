@@ -1,68 +1,75 @@
 section	.text
 
 
-   global _start    ;must be declared for using gcc
+   global main    ;must be declared for using gcc
 	
-_start:                         ;tell linker entry point
-    mov eax,0                 ; contador para save
-    push eax                   ; posicion 1 stack
-    mov ebx,0                  ; contador de w's
-    mov ecx,fr                ; puntero a w's
+main:                         ;tell linker entry point
+    mov rax,0                 ; contador para save
+    push rax                   ; posicion 1 stack
+    mov rbx,0                  ; contador de w's
+    mov rcx,fr                ; puntero a w's
     
 _loop1:
-    mov edx, DataIn          ; puntero datos entrada
+    mov rdx, DataIn          ; puntero datos entrada
+    cvttss2si rax,Xmm0
+
     xorps Xmm0,Xmm0             
-    mov eax,0                 ; contador ciclo fila
-    cmp ebx,63
+    cvttss2si rax,Xmm0
+    mov rax,0                 ; contador ciclo fila
+    cmp rbx,63
     jne _loop2
-    mov ebx,0                 ;contador en 0
-    push ebx                  ;contador a stack posicion 2
+    mov rbx,0                 ;contador en 0
+    push rbx                  ;contador a stack posicion 2
     jmp _loopprint
     
 _loop2:
-    movss Xmm2,[ecx]         
-    movss Xmm3,[edx]
+    movss Xmm2,[rcx]         
+    movss Xmm3,[rdx]
     mulss Xmm2,Xmm3
     addss Xmm0,Xmm2
-    add edx,2
-    add eax,1
-    add ecx,2
-    add ebx,1
-    cmp eax,7                 ;final de ciclo de 7
+    add rdx,2
+    add rax,1
+    add rcx,2
+    add rbx,1
+    cmp rax,7                 ;final de ciclo de 7
     jne _loop2
     jmp _save
 
 
 _loopprint:
-    pop ebx
-    mov edx,DataOut
-    add edx,ebx
-    push ebx
+    pop rbx
+    mov rdx,DataOut
+    add rdx,rbx
+    push rbx
+
     
-    mov ecx,[edx]
-    mov eax,4
-    mov edx,32
-    mov ebx,1
-    int 80h
+    mov rcx,[rdx]
+    mov rax,4
+    mov rdx,8
+    mov rbx,1
+    syscall
     
-    pop ebx
-    mov edx, ebx    ;auxiliar para comparar 
-    add ebx,4       
-    push ebx
-    cmp edx,32      
+    pop rbx
+    mov rdx, rbx    ;auxiliar para comparar 
+    add rbx,4       
+    push rbx
+    cmp rdx,28      
     jne _loopprint
     
-    mov eax,1
-    mov ebx,1
-    int 80h
+    mov rax,1
+    mov rbx,1
+    syscall
     
 _save:
-    pop eax
-    mov edx,DataOut
-    add edx,eax
-    movss [edx],Xmm0
-    add eax,4
-    push eax
+    pop rax
+    mov rdx,DataOut
+    add rdx,rax
+    push rax
+    cvttss2si rax,Xmm0
+    mov [rdx],rax
+    pop rax
+    add rax,4
+    push rax
     jmp _loop1
     
 	
