@@ -37,7 +37,6 @@ _loopprint:
     pop ebx
     mov edx,DataOut
     add edx,ebx
-    add ebx,4
     push ebx
     
     mov ecx,[edx]
@@ -47,9 +46,10 @@ _loopprint:
     int 80h
     
     pop ebx
-    mov edx, ebx        ;auxiliar 
+    mov edx, ebx    ;auxiliar para comparar 
+    add ebx,4       
     push ebx
-    cmp edx,32      ;no puede ser volatil
+    cmp edx,32      
     jne _loopprint
     
     mov eax,1
@@ -58,9 +58,9 @@ _loopprint:
     
 _save:
     pop eax
-    mov ebx,DataOut
-    add eax,ebx
-    movss [eax],Xmm0
+    mov edx,DataOut
+    add edx,eax
+    movss [edx],Xmm0
     add eax,4
     push eax
     jmp _loop1
